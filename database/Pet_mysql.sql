@@ -1,8 +1,10 @@
 CREATE DATABASE petdb;
 
+use petdb;
+
 CREATE TABLE Member
 (
-  user_id  INT(10)      NOT NULL AUTO_INCREMENT,
+  user_id  INT          NOT NULL AUTO_INCREMENT,
   email    VARCHAR(255) NOT NULL,
   login_id VARCHAR(50)  NOT NULL,
   password VARCHAR(255) NOT NULL,
@@ -19,9 +21,9 @@ ALTER TABLE Member
 
 CREATE TABLE Pet
 (
-  pet_id    INT(10)      NOT NULL AUTO_INCREMENT,
-  user_id   INT(10)      NOT NULL,
-  breed_id  INT(10)      NOT NULL,
+  pet_id    INT          NOT NULL AUTO_INCREMENT,
+  user_id   INT          NOT NULL,
+  breed_id  INT          NOT NULL,
   petname   VARCHAR(50)  NOT NULL,
   birthdate DATE         NOT NULL,
   gender    CHAR(1)      NOT NULL,
@@ -34,7 +36,7 @@ CREATE TABLE Pet
 
 CREATE TABLE Breed
 (
-  breed_id  INT(10)      NOT NULL AUTO_INCREMENT,
+  breed_id  INT          NOT NULL AUTO_INCREMENT,
   breedname VARCHAR(50)  NOT NULL,
   PRIMARY KEY (breed_id)
 );
@@ -46,7 +48,7 @@ ALTER TABLE Breed
 
 CREATE TABLE Food
 (
-  food_id     INT(10)       NOT NULL AUTO_INCREMENT,
+  food_id     INT           NOT NULL AUTO_INCREMENT,
   foodname    VARCHAR(100)  NOT NULL,
   edible      BOOLEAN       NOT NULL,
   description TEXT          NULL,
@@ -61,8 +63,8 @@ ALTER TABLE Food
 
 CREATE TABLE Symptom
 (
-  symptom_id  INT(10) NOT NULL AUTO_INCREMENT,
-  pet_id      INT(10) NOT NULL,
+  symptom_id  INT     NOT NULL AUTO_INCREMENT,
+  pet_id      INT     NOT NULL,
   symptom     TEXT    NOT NULL,
   symptomdate DATE    NOT NULL,
   PRIMARY KEY (symptom_id)
