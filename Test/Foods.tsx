@@ -1,7 +1,8 @@
 import React, { use, useEffect, useState } from "react";
 import { StyleSheet, Text, View, TextInput, FlatList, TouchableOpacity } from 'react-native';
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "./types";
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 //임시 타입 지정
 type FoodItem = {
@@ -21,9 +22,11 @@ const ALL_FOODS_DATA = [
   { id: '8', name: '장조림' },
 ];
 
-type FoodsProps = NativeStackScreenProps<RootStackParamList, 'Foods'>;
+type FoodsProps = NativeStackNavigationProp<RootStackParamList>;
 
-function Foods({ navigation }: FoodsProps) {
+function Foods() {
+
+  const navigation = useNavigation<FoodsProps>();
 
   const [searchText, setSearchText] = useState('');
 
