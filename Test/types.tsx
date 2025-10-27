@@ -25,4 +25,6 @@ export type RootStackParamList={
     deleteNote: (id: string) => void;
     navigateToEdit: (note: Note) => void;
   };
+  Foods: undefined;
+  FoodDetail: {foodId: string};
 };

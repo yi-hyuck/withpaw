@@ -1,5 +1,7 @@
 import React, { use, useEffect, useState } from "react";
 import { StyleSheet, Text, View, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "./types";
 
 //임시 타입 지정
 type FoodItem = {
@@ -19,9 +21,9 @@ const ALL_FOODS_DATA = [
   { id: '8', name: '장조림' },
 ];
 
+type FoodsProps = NativeStackScreenProps<RootStackParamList, 'Foods'>;
 
-
-function Foods() {
+function Foods({ navigation }: FoodsProps) {
 
   const [searchText, setSearchText] = useState('');
 
@@ -44,9 +46,15 @@ function Foods() {
 
       }, [searchText]);
 
+      // 음식 클릭시 이동 함수
+      const handlePressFood = (item: FoodItem) => {
+        navigation.navigate('FoodDetail', {foodId: item.id});
+      };
+
       const renderFoodItem = ({item}: {item: FoodItem}) => (
         
-        <TouchableOpacity style={styles.itemContainer}>
+        <TouchableOpacity style={styles.itemContainer}
+        onPress={() => handlePressFood(item)}>
           <Text style={styles.itemText}>{item.name}</Text>
         </TouchableOpacity>
       );
