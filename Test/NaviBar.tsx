@@ -3,8 +3,8 @@ import { StyleSheet, Text, View, Platform, TouchableOpacity,  } from 'react-nati
 import { createBottomTabNavigator, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NavigationContainer, useNavigation, } from "@react-navigation/native";
-import { NativeStackNavigationProp, } from "@react-navigation/native-stack";
-import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
+import { NativeStackNavigationProp, createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createDrawerNavigator, DrawerNavigationProp, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer'
 
 import { RootStackParamList } from "./types";
 
@@ -12,10 +12,13 @@ import FoodsScreen from './Foods';
 import Disease from './Disease';
 import CalendarMainScreen from "./Calendar";
 import Maps from './Maps';
+import UserInfoScreen from './UserInfo';
+import DogMgmtScreen from './DogManagement';
 
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 type NavigationProps = DrawerNavigationProp<RootStackParamList>;
 type DrawerNavigationPropType = DrawerNavigationProp<RootStackParamList>;
@@ -54,7 +57,7 @@ function TabNaviBar() {
         },
         
       }}>
-      <Tab.Screen
+      <Tab.Screen             //위 네비게이션 바
           name="Maps"
           component={Maps}
           options={{
@@ -158,23 +161,65 @@ function TabNaviBar() {
   )
 }
 
-function NaviBar(){
+function CustomDrawerContent(props:any){
+  return(
+    <DrawerContentScrollView {...props}>
+      <DrawerItem
+        label="홈"
+        labelStyle={{fontWeight:'bold', fontSize: 17,}}
+        onPress={()=>props.navigation.navigate("Home")}
+      />
+      <DrawerItem
+        label="회원 정보 관리"
+        onPress={()=>props.navigation.navigate("UserInfo")}
+      />
+      <DrawerItem
+        label="반려동물 정보 관리"
+        onPress={()=>props.navigation.navigate("DogManagement")}
+      />
+    </DrawerContentScrollView>
+  )
+}
+
+function DrawerNaviBar(){
   return(
     <Drawer.Navigator
       initialRouteName="Home"
       screenOptions={{
-        drawerPosition:'right'
+        drawerPosition:'right',
+        drawerStyle:{
+          backgroundColor: '#fffefbff',
+          width: 230,
+        },
       }}
-      >
+      drawerContent={(props)=><CustomDrawerContent {...props}/>}
+    >
       <Drawer.Screen
         name="Home"
         component={TabNaviBar}
         options={{
           title: "홈",
-          headerShown:false
+          headerShown:false,
         }}
       />
+      {/* <Drawer.Screen
+        name="UserInfo"
+        component={UserInfo}
+        options={{
+          title: "회원 정보",
+        }}
+      /> */}
     </Drawer.Navigator>
+  )
+}
+
+function NaviBar(){
+  return(
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={DrawerNaviBar} options={{headerShown: false}}/>
+      <Stack.Screen name="UserInfo" component={UserInfoScreen} options={{headerShown: false}}/>
+      <Stack.Screen name="DogManagement" component={DogMgmtScreen} options={{headerShown: false}}/>
+    </Stack.Navigator>
   )
 }
 

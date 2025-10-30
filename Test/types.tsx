@@ -26,6 +26,7 @@ export type RootStackParamList={
   Details: { id: number };
   Login: undefined;
   NaviBar: undefined;
+  StackNaviBar: undefined;
   Maps: undefined;
   Disease: undefined;
   DogAi: undefined;
@@ -51,4 +52,8 @@ export type RootStackParamList={
   Foods: undefined;
   FoodDetail: {foodId: string};
   FoodsScreen: undefined;
+  UserInfo: undefined;
+  UserInfoScreen: undefined;
+  DogMgmtScreen: undefined;
+  DogManagement: undefined;
 };
