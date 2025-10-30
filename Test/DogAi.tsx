@@ -1,5 +1,7 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, {useState, useRef, useEffect} from "react";
 import { StyleSheet, Text, View, TextInput, Button, FlatList, SafeAreaView, KeyboardAvoidingView, ActivityIndicator} from 'react-native';
+import { RootStackParamList } from "./types";
 
 //타입 정의
 interface Message {
@@ -8,7 +10,9 @@ interface Message {
   sender: 'user' | 'ai';
 }
 
-const DogAi = () => {
+type DogAiProps = NativeStackScreenProps<RootStackParamList, 'DogAi'>;
+
+const DogAi = ({navigation, route}: DogAiProps) => {
 
   //메세지 목록(id, text, sender)
   const [messages, setMessages] = useState<Message[]>([
@@ -51,6 +55,7 @@ const DogAi = () => {
     // chat bot API 호출 코드 작성 위치
     //->
 
+    //테스트용 응답 대기 시간. 추후 setTimeout 제거
     setTimeout(() => {
       const aiText = "'" + input + "' 증상에 대해 분석 중입니다.";
 
@@ -63,9 +68,8 @@ const DogAi = () => {
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
       setIsLoading(false);
       
-    }, 1500);
+    }, 1500); //테스트용 응답 대기 시간. 추후 setTimeout 제거
   };
-
   
   const renderMessage = ({item}: {item: Message}) => (
     <View
