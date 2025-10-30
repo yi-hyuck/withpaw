@@ -67,7 +67,7 @@ function Disease() {
                     })}
         />
       <Stack.Screen name="DogNoteScreen" component={DogNoteScreen} options={{headerShown:false}}/>
-      <Stack.Screen name="DogAi" component={DogAi}/>
+      <Stack.Screen name="DogAi" component={DogAi} options={{title: 'Ai 진단', headerStyle: {backgroundColor: '#ffd651ff'}, headerTintColor: '#000'}}/>
     </Stack.Navigator>
   )
 }
