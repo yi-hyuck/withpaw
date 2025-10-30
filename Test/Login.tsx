@@ -69,7 +69,7 @@ function Login() {
       />
       <TouchableOpacity
         style={styles.button}
-        onPress={()=>navigation.reset({index:0, routes:[{name:'Maps'}]})}>
+        onPress={()=>navigation.reset({index:0, routes:[{name:'NaviBar'}]})}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
     </View>
