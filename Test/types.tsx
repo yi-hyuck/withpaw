@@ -4,12 +4,28 @@ interface Note {
   data: string;
 }
 
+interface Schedule {
+  id: string;
+  //일정 이름
+  name: string;
+  //시작일
+  startDate: string;
+  //종료일
+  endDate: string;
+  //반복 여부
+  repeats: boolean;
+  //몇 주마다 반복?
+  repeatWeeks: number;
+  originalId: string;
+}
+
 export type RootStackParamList={
   SignUp:undefined;
   DogInfo: {userData:any};
   Home: undefined;
   Details: { id: number };
   Login: undefined;
+  NaviBar: undefined;
   Maps: undefined;
   Disease: undefined;
   DogAi: undefined;
@@ -25,6 +41,14 @@ export type RootStackParamList={
     deleteNote: (id: string) => void;
     navigateToEdit: (note: Note) => void;
   };
+  Calender: undefined;
+  CalendarScreen: undefined;
+  CalendarMainScreen: undefined;
+  ScheduleAdd: {
+    addSchedule: (data: any) => void;
+    isSaving: boolean;
+  } | undefined;
   Foods: undefined;
   FoodDetail: {foodId: string};
+  FoodsScreen: undefined;
 };

@@ -18,9 +18,7 @@ import { RootStackParamList } from './types';
 
 import Login from './Login';
 import SignUp_Screen from './SignUp';
-import Maps from './Maps';
-import Foods from './Foods';
-import FoodDetail from './FoodDetail';
+import NaviBar from './NaviBar';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -41,9 +39,7 @@ function App() {
           <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}}/>
           <Stack.Screen name="Login" component={Login}/>
           <Stack.Screen name="SignUp" component={SignUp_Screen} options={{headerShown: false}}/>
-          <Stack.Screen name="Maps" component={Maps} options={{headerShown: false}}/>
-          <Stack.Screen name="Foods" component={Foods} options={{headerShown: false}}/>
-          <Stack.Screen name="FoodDetail" component={FoodDetail} options={{headerShown: false}}/>
+          <Stack.Screen name="NaviBar" component={NaviBar} options={{headerShown: false}}/>
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

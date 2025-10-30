@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity,} from 'react-native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
 import { RootStackParamList } from "./types";
 
 import DogNoteScreen from './DogNote';
 import DogAi from './DogAi';
 
+//스텍 화면 관련
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 interface HeaderTitleProps {
@@ -32,6 +35,24 @@ const HEADER_STYLE = {
     backgroundColor: '#ffd651ff',
 };
 
+//드로어바 관련
+const Drawer = createDrawerNavigator();
+
+type NavigationProps = DrawerNavigationProp<RootStackParamList>;
+
+const DrawerButton = () => {
+  const navigation = useNavigation<NavigationProps>();
+
+  return(
+    <TouchableOpacity
+      onPress={()=>navigation.openDrawer()}
+      style={{marginRight: 0}}
+    >
+      <MaterialCommunityIcons name='account-circle' size={30} color={"#ffffffff"}/>
+    </TouchableOpacity>
+  )
+}
+
 function Disease() {
   return(
     <Stack.Navigator>
@@ -42,6 +63,7 @@ function Disease() {
                       headerTitle:(props)=>(
                         <CustomTitle {...props} title="질병 관리"/>
                       ),
+                      headerRight: ()=> <DrawerButton/>,
                     })}
         />
       <Stack.Screen name="DogNoteScreen" component={DogNoteScreen} options={{headerShown:false}}/>

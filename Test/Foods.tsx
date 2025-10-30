@@ -1,8 +1,12 @@
 import React, { use, useEffect, useState } from "react";
 import { StyleSheet, Text, View, TextInput, FlatList, TouchableOpacity } from 'react-native';
-import type { RootStackParamList } from "./types";
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { NativeStackNavigationProp, createNativeStackNavigator } from "@react-navigation/native-stack";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
+import type { RootStackParamList } from "./types";
+
+import FoodDetail from './FoodDetail';
 
 //임시 타입 지정
 type FoodItem = {
@@ -22,7 +26,75 @@ const ALL_FOODS_DATA = [
   { id: '8', name: '장조림' },
 ];
 
+//헤더바
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
 type FoodsProps = NativeStackNavigationProp<RootStackParamList>;
+
+interface CustomTitleProps {
+    title: string;
+}
+
+const CustomTitle = ({ title }:CustomTitleProps) => {
+    return (
+        <Text style={[styles.headerTitle, { paddingLeft: 5 }]}>
+            {title}
+        </Text>
+    );
+};
+
+const HEADER_STYLE = {
+    height: 55,
+    backgroundColor: '#ffd651ff',
+};
+
+//드로어바 
+const Drawer = createDrawerNavigator();
+
+type NavigationProps = DrawerNavigationProp<RootStackParamList>;
+
+const DrawerButton = () => {
+  const navigation = useNavigation<NavigationProps>();
+
+  return(
+    <TouchableOpacity
+      onPress={()=>navigation.openDrawer()}
+      style={{marginRight: 0}}
+    >
+      <MaterialCommunityIcons name='account-circle' size={30} color={"#ffffffff"}/>
+    </TouchableOpacity>
+  )
+}
+
+//음식 화면
+function FoodsScreen(){
+  return(
+  <Stack.Navigator>
+    <Stack.Screen name="Foods" component={Foods}
+                    options={({route})=>({
+                      headerShown: true,
+                      headerStyle:HEADER_STYLE,
+                      headerTitle:(props)=>(
+                        <CustomTitle {...props} title="음식 검색"/>
+                      ),
+                      headerRight: ()=> <DrawerButton/>
+                    })}/>
+    <Stack.Screen
+      name="FoodDetail" 
+      component={FoodDetail}
+      options={{
+        headerStyle:HEADER_STYLE,
+        headerTitle: "음식 정보",
+        headerTitleStyle: {fontSize:20, fontWeight:'bold', color:'#000000'}
+      }}
+    />
+  </Stack.Navigator>
+  )
+
+
+}
+
+
 
 function Foods() {
 
@@ -111,7 +183,12 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 16,
-  }
+  },
+  headerTitle:{
+    fontSize:20,
+    fontWeight:'bold',
+    color:'#000000',
+  },
 });
 
-export default Foods;
+export default FoodsScreen;

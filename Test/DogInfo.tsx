@@ -53,15 +53,20 @@ function DogInfo(){
         dogBirth: '',
         dogBreed: '',
         dogWeight: '',
+        neutering: '',
       }
     });
 
     //성별 변수
     const [selectGender, setSelectGender] = useState("");
+
     //날짜 변수
     const [text, onChangeText] = useState("");
     const [visible, setVisible] = useState(false); //날짜 선택
     const dogBirthValue = watch('dogBirth');
+
+    //중성화 변수
+    const [selectNeutering, setSelectNeutering] = useState('');
     
     //Signup에서 사용자 정보 받아옴
     const onSubmit = (data:any)=>{
@@ -86,6 +91,24 @@ function DogInfo(){
           </Text>
       </TouchableOpacity>
     )
+
+    //중성화 설정
+    const handleNeuteringSelect = (value: string) => {
+      setSelectNeutering(value);
+      setValue('neutering', value, {shouldValidate: true});
+    }
+    
+    const renderNeuteringButton = (label:string, value: string) => (
+      <TouchableOpacity
+        key={value}
+        style={[styles.button2, selectNeutering===value&&styles.selectButton]}
+        onPress={()=>handleNeuteringSelect(value)}>
+          <Text style={[styles.buttonText2, selectGender===value&&styles.selectButtonText]}>
+            {label}
+          </Text>
+      </TouchableOpacity>
+    )
+
 
     //날짜 클릭시
     const onPressDate = () => {
@@ -141,6 +164,23 @@ function DogInfo(){
                   {renderButton('여', 'female')}
                 </View>
                 {errors?.dogGender?.message && <Text style={styles.error}>{String(errors.dogGender.message)}</Text>}
+              </View>
+            )}
+          />
+        </View>
+        <Text style={[styles.title, {marginTop:30}]}>중성화 여부</Text>
+        <View style={styles.container}>
+          <Controller
+            control={control}
+            name="neutering"
+            rules={{required: '중성화 여부를 선택해주세요.'}}
+            render={()=>(
+              <View>
+                <View style={styles.buttonGroup}>
+                  {renderNeuteringButton('O', 'yes')}
+                  {renderNeuteringButton('X', 'no')}
+                </View>
+                {errors?.neutering?.message && <Text style={styles.error}>{String(errors.neutering.message)}</Text>}
               </View>
             )}
           />
