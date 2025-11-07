@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+	<meta charset="UTF-8">
+	<title>일정등록테스트</title>
+</head>
+
+<body>
+	<h3>일정등록</h3>
+	<button onclick="sendData()">등록하기</button>
+	<script>
+		async function sendData() {
+			const response = await fetch('/api/schedules', {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({
+				  "memberId": 1,
+				  "petId": 2,
+				  "title": "산책",
+				  "scheduleTime": "2025-10-18T09:00:00"
+				})
+			});
+			const data = await response.json();
+			alert("등록 성공: " + JSON.stringify(data));
+		}
+	</script>
+</body>
+
+</html>
