@@ -19,6 +19,18 @@ interface Schedule {
   originalId: string;
 }
 
+export type NewDogData = {
+  name: string;
+  dogName: string,
+  dogGender: string,
+  dogBirth: string,
+  dogBreed: string,
+  dogWeight: string,
+  neutering: string,
+};
+
+export type UpdatedDogData = NewDogData & {id: string};
+
 export type RootStackParamList={
   SignUp:undefined;
   DogInfo: {userData:any};
@@ -55,5 +67,7 @@ export type RootStackParamList={
   UserInfo: undefined;
   UserInfoScreen: undefined;
   DogMgmtScreen: undefined;
-  DogManagement: undefined;
+  DogManagement: {newDog?: NewDogData; updatedDog?: UpdatedDogData} | undefined;
+  DogAdd: undefined;
+  DogEdit: {dogId: string};
 };
