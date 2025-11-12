@@ -63,10 +63,11 @@ ALTER TABLE Food
 
 CREATE TABLE Symptom
 (
-  symptom_id  INT     NOT NULL AUTO_INCREMENT,
-  pet_id      INT     NOT NULL,
-  symptom     TEXT    NOT NULL,
-  symptomdate DATE    NOT NULL,
+  symptom_id  INT           NOT NULL AUTO_INCREMENT,
+  pet_id      INT           NOT NULL,
+  title       VARCHAR(100)  NOT NULL,
+  symptom     TEXT          NOT NULL,
+  symptomdate DATE          NOT NULL,
   PRIMARY KEY (symptom_id)
 );
 
