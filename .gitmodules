@@ -1,0 +1,4 @@
+[submodule "dog"]
+	path = dog
+	url = https://github.com/coco1150/dog.git
+	branch = main
