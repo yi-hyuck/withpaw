@@ -70,4 +70,6 @@ export type RootStackParamList={
   DogManagement: {newDog?: NewDogData; updatedDog?: UpdatedDogData} | undefined;
   DogAdd: undefined;
   DogEdit: {dogId: string};
+  Logout: undefined;
+  App: undefined;
 };

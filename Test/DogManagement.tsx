@@ -91,8 +91,21 @@ function DogMgmtScreen(){
                                     <CustomTitle {...props} title="반려동물 정보"/>
                                 ),
                                 })}/>
-                <Stack.Screen name="DogAdd" component={DogAdd}/>
-                <Stack.Screen name="DogEdit" component={DogEdit}/>
+                <Stack.Screen name="DogAdd" component={DogAdd}
+                                options={({route})=>({
+                                headerShown: true,
+                                headerStyle:HEADER_STYLE,
+                                headerTitle:(props)=>(
+                                    <CustomTitle {...props} title="반려동물 추가"/>
+                                ),
+                                })}/>
+                <Stack.Screen name="DogEdit" component={DogEdit}options={({route})=>({
+                                headerShown: true,
+                                headerStyle:HEADER_STYLE,
+                                headerTitle:(props)=>(
+                                    <CustomTitle {...props} title="반려동물 수정"/>
+                                ),
+                                })}/>
             </Stack.Navigator>
         </GestureHandlerRootView>
     )

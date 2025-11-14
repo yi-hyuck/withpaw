@@ -1,11 +1,26 @@
 import React from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity} from 'react-native';
 import { RootStackParamList } from './types';
-import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+//임시데이터
+interface userType{
+    id: string;
+    email: string;
+    password: string;
+}
+
+const userItem: userType[] = [
+    {
+        id: 'asdf1234',
+        email: 'asdf1234@email.com',
+        password: '1234',
+    }
+]
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-type FoodsProps = NativeStackNavigationProp<RootStackParamList>;
+type userInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfo'>
 
 interface CustomTitleProps {
     title: string;
@@ -13,9 +28,9 @@ interface CustomTitleProps {
 
 const CustomTitle = ({ title }:CustomTitleProps) => {
     return (
-        <Text style={[styles.headerTitle, { paddingLeft: 5 }]}>
-            {title}
-        </Text>
+            <Text style={[styles.headerTitle, { paddingLeft: 5 }]}>
+                {title}
+            </Text>
     );
 };
 
@@ -41,10 +56,18 @@ function UserInfoScreen(){
 }
 
 //관리 화면
-function UserInfo(){
+function UserInfo({navigation, route}: userInfoScreenProps){
+    const userData = userItem[0];
+
     return(
-        <View style={styles.container}>
-            <Text>회원 정보</Text>
+        <View style={{backgroundColor:'#ffffffff', alignItems:'center'}}>
+            <MaterialCommunityIcons
+                style={{marginTop: 30}}
+                name='account-circle'
+                size={120}
+                color='#b9b9b9fb'
+            />
+            <Text style={styles.textStyle}>{userData.id}</Text>
         </View>
     )
 }
@@ -52,14 +75,17 @@ function UserInfo(){
 
 
 const styles = StyleSheet.create({
-  container:{
-    backgroundColor:'#ffffffff',
-  },
   headerTitle:{
     fontSize:20,
     fontWeight:'bold',
     color:'#000000',
   },
+  textStyle:{
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#000000ff',
+    marginTop: 5,
+  }
 });
 
 export default UserInfoScreen;

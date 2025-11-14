@@ -14,6 +14,7 @@ import CalendarMainScreen from "./Calendar";
 import Maps from './Maps';
 import UserInfoScreen from './UserInfo';
 import DogMgmtScreen from './DogManagement';
+import App from './App';
 
 
 const Tab = createBottomTabNavigator();
@@ -176,6 +177,28 @@ function CustomDrawerContent(props:any){
       <DrawerItem
         label="반려동물 정보 관리"
         onPress={()=>props.navigation.navigate("DogManagement")}
+      />
+     <DrawerItem
+        label="로그아웃"
+        labelStyle={{
+          color: '#ff0000ff',
+          textAlignVertical: 'bottom',
+        }}
+        onPress={()=>{
+          props.navigation.closeDrawer();
+          const naviBarStack = props.navigation.getParent();
+
+          if(naviBarStack){
+            const rootStack = naviBarStack.getParent();
+
+            if(rootStack && rootStack.reset){
+              rootStack.reset({
+                index: 0,
+                routes: [{name: 'Home'}]
+              })
+            }
+          }
+        }}
       />
     </DrawerContentScrollView>
   )
