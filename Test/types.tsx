@@ -29,6 +29,12 @@ export type NewDogData = {
   neutering: string,
 };
 
+interface userType {
+    id: string;
+    email: string;
+    password: string;
+}
+
 export type UpdatedDogData = NewDogData & {id: string};
 
 export type RootStackParamList={
@@ -72,4 +78,5 @@ export type RootStackParamList={
   DogEdit: {dogId: string};
   Logout: undefined;
   App: undefined;
+  UserEdit: {currentData: userType; onSave:(updatedData: userType)=>void};
 };
