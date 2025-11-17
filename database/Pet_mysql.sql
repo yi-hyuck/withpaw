@@ -21,29 +21,16 @@ ALTER TABLE Member
 
 CREATE TABLE Pet
 (
-  pet_id    INT          NOT NULL AUTO_INCREMENT,
-  user_id   INT          NOT NULL,
-  breed_id  INT          NOT NULL,
-  petname   VARCHAR(50)  NOT NULL,
-  birthdate DATE         NOT NULL,
-  gender    CHAR(1)      NOT NULL,
-  neuter    BOOLEAN      NOT NULL,
-  weight    DECIMAL(5, 2) NOT NULL,
+  pet_id     INT          NOT NULL AUTO_INCREMENT,
+  user_id    INT          NOT NULL,
+  petname    VARCHAR(50)  NOT NULL,
+  breed 	 VARCHAR(50)  NOT NULL,
+  birthdate  DATE         NOT NULL,
+  gender     CHAR(1)      NOT NULL,
+  neuter     BOOLEAN      NOT NULL,
+  weight     DECIMAL(5, 2) NOT NULL,
   PRIMARY KEY (pet_id)
 );
-
-
-
-CREATE TABLE Breed
-(
-  breed_id  INT          NOT NULL AUTO_INCREMENT,
-  breedname VARCHAR(50)  NOT NULL,
-  PRIMARY KEY (breed_id)
-);
-
-ALTER TABLE Breed
-  ADD CONSTRAINT UQ_breedname UNIQUE (breedname);
-
 
 
 CREATE TABLE Food
@@ -75,14 +62,12 @@ CREATE TABLE Symptom
 ALTER TABLE Pet
   ADD CONSTRAINT FK_Member_TO_Pet
     FOREIGN KEY (user_id)
-    REFERENCES Member (user_id);
-
-ALTER TABLE Pet
-  ADD CONSTRAINT FK_Breed_TO_Pet
-    FOREIGN KEY (breed_id)
-    REFERENCES Breed (breed_id);
+    REFERENCES Member (user_id)
+    ON DELETE CASCADE;
 
 ALTER TABLE Symptom
   ADD CONSTRAINT FK_Pet_TO_Symptom
     FOREIGN KEY (pet_id)
-    REFERENCES Pet (pet_id);
+    REFERENCES Pet (pet_id)
+    ON DELETE CASCADE;
+    
