@@ -1,8 +1,31 @@
+-- MEMBER --
+-- 계정 삭제
+DELETE FROM member WHERE user_id = 1;
+
+
 -- PET --
+-- 반려동물 정보 조회
+SELECT petname, birthdate, breed FROM pet WHERE pet_id = 1;
+
 -- 반려동물 정보 등록
 INSERT INTO breed (breedname) VALUES ('말티즈');
-INSERT INTO Pet (user_id, petname, breed_id, birthdate, gender, neuter, weight)
+INSERT INTO pet (user_id, petname, breed, birthdate, gender, neuter, weight)
 VALUES (1, '티즈', 1, '2024-10-10', 'F', false, 2.12);
+
+-- 반려동물 정보 수정
+UPDATE pet
+SET
+	petname = '티즐',
+    breed = '푸들',
+	birthdate = '2024-10-11',
+    gender = 'M',
+    neuter = true,
+    weight = 3.11
+WHERE
+pet_id = 1;
+
+-- 반려동물 정보 삭제
+DELETE FROM pet WHERE pet_id = 1;
 
 -- FOOD --
 -- 검색어 조회
