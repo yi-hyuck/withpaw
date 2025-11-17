@@ -27,8 +27,8 @@ public class Symptom {
 	private Long memberId; // 회원id
 	@NotNull
 	private Long petId; // 반려동물 ID
-	private LocalDateTime SymptomDate; // 증상 기록 날짜
-	private String Description; // 기록(텍스트)
+	private LocalDateTime symptomDate; // 증상 기록 날짜
+	private String description; // 기록(텍스트)
 	private String selectedSymptomIds; // 증상ID리스트(충혈,구토 등의ID
 	private String suspectedDiseaseIds; // 연관 의심질병ID
 	// private List<Disease> suspectedDiseases = new ArrayList<>();

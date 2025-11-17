@@ -31,69 +31,76 @@ public class SymptomService {
 
     // 증상 기록 등록
     public SymptomResponseDTO create(SymptomRequestDTO dto) {
-        if (dto == null)
-            throw new BadRequestException("요청 데이터가 비어 있습니다.");
 
-        if (dto.getSelectedSymptomIds() == null || dto.getSelectedSymptomIds().isBlank())
-            throw new BadRequestException("선택된 증상이 없습니다.");
+        if (dto.getSelectedSymptomIds() == null || dto.getSelectedSymptomIds().isEmpty())
+            throw new BadRequestException("선택된 증상 목록이 비어 있습니다.");
 
-        Symptom symptom = dto.toEntity();
+        Symptom symptom = new Symptom();
+        symptom.setMemberId(dto.getMemberId());
+        symptom.setPetId(dto.getPetId());
+        symptom.setSymptomDate(dto.getSymptomDate());
+        symptom.setDescription(dto.getDescription());
         symptom.setCreatedAt(LocalDateTime.now());
 
         try {
-            List<Long> selectedIds = objectMapper.readValue(dto.getSelectedSymptomIds(), new TypeReference<>() {});
-            if (selectedIds.isEmpty())
-                throw new BadRequestException("선택된 증상 목록이 비어 있습니다.");
+            // List<Long> → JSON
+            String selectedJson = objectMapper.writeValueAsString(dto.getSelectedSymptomIds());
+            symptom.setSelectedSymptomIds(selectedJson);
 
-            List<Disease> suspected = selectedIds.stream()
+            // 관련 질병 찾기
+            List<Disease> suspected = dto.getSelectedSymptomIds().stream()
                     .flatMap(id -> diseaseRepository.findBySymptomIds(id).stream())
                     .distinct()
                     .toList();
 
-            if (suspected.isEmpty())
-                throw new NotFoundException("선택된 증상과 일치하는 질병이 없습니다.");
-
-            String json = objectMapper.writeValueAsString(
+            String suspectedJson = objectMapper.writeValueAsString(
                     suspected.stream().map(Disease::getId).toList()
             );
-            symptom.setSuspectedDiseaseIds(json);
+            symptom.setSuspectedDiseaseIds(suspectedJson);
 
             Symptom saved = symptomRepository.save(symptom);
             return SymptomResponseDTO.fromEntity(saved);
 
-        } catch (BadRequestException | NotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new InternalServerException("증상 등록 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
+
     // 증상 기록 수정
     public SymptomResponseDTO update(Long id, SymptomRequestDTO dto) {
+
         Symptom existing = symptomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("해당 증상 기록이 존재하지 않습니다."));
 
         try {
             if (dto.getDescription() != null && !dto.getDescription().isBlank())
                 existing.setDescription(dto.getDescription());
+
             if (dto.getSymptomDate() != null)
                 existing.setSymptomDate(dto.getSymptomDate());
-            if (dto.getSelectedSymptomIds() != null && !dto.getSelectedSymptomIds().isBlank()) {
-                existing.setSelectedSymptomIds(dto.getSelectedSymptomIds());
 
-                List<Long> selectedIds = objectMapper.readValue(dto.getSelectedSymptomIds(), new TypeReference<>() {});
-                if (selectedIds.isEmpty())
-                    throw new BadRequestException("선택된 증상 목록이 비어 있습니다.");
+            // 선택 증상 변경
+            if (dto.getSelectedSymptomIds() != null && !dto.getSelectedSymptomIds().isEmpty()) {
 
+                // List<Long> → JSON 문자열 저장
+                existing.setSelectedSymptomIds(
+                        objectMapper.writeValueAsString(dto.getSelectedSymptomIds())
+                );
+
+                List<Long> selectedIds = dto.getSelectedSymptomIds();
+
+                // 관련 질병 추론
                 List<Disease> suspected = selectedIds.stream()
-                        .flatMap(symptomId -> diseaseRepository.findBySymptomIds(symptomId).stream())
+                        .flatMap(id2 -> diseaseRepository.findBySymptomIds(id2).stream())
                         .distinct()
                         .toList();
 
-                String json = objectMapper.writeValueAsString(
-                        suspected.stream().map(Disease::getId).toList()
+                existing.setSuspectedDiseaseIds(
+                        objectMapper.writeValueAsString(
+                                suspected.stream().map(Disease::getId).toList()
+                        )
                 );
-                existing.setSuspectedDiseaseIds(json);
             }
 
             Symptom updated = symptomRepository.save(existing);

@@ -26,8 +26,9 @@ public class SymptomRequestDTO {
     private LocalDateTime symptomDate;
 	@NotBlank(message = "증상 설명을 입력해야 합니다.")
     private String description;
-	@NotBlank(message = "선택된 증상 목록은 비워둘 수 없습니다.")
-    private String selectedSymptomIds; // 선택된 증상 ID들
+	@NotNull(message = "선택된 증상 목록은 비워둘 수 없습니다.")
+	@jakarta.validation.constraints.Size(min = 1, message = "선택된 증상 목록은 1개 이상이어야 합니다.")
+	private List<Long> selectedSymptomIds; // 선택된 증상 ID들
     private List<Long> suspectedDiseaseIds; //관련질병id
     
     public Symptom toEntity() {

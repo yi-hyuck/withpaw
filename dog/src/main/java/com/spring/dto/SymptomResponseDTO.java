@@ -1,6 +1,7 @@
 package com.spring.dto;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,7 @@ public class SymptomResponseDTO {
 	private Long petId; // 반려동물 ID
 	private LocalDateTime symptomDate; // 기록된 날짜
 	private String description; // 기록 내용
-	private String selectedSymptomIds; // 선택된 증상 ID 목록
+	private List<Long> selectedSymptomIds; // 선택된 증상 ID 목록
 
 	private List<DiseaseSummaryDTO> suspectedDiseases; // 의심 질병 리스트
 	private LocalDateTime createdAt; // 생성 시각
@@ -36,33 +37,49 @@ public class SymptomResponseDTO {
         dto.setPetId(symptom.getPetId());
         dto.setSymptomDate(symptom.getSymptomDate());
         dto.setDescription(symptom.getDescription());
-        dto.setSelectedSymptomIds(symptom.getSelectedSymptomIds());
+        //dto.setSelectedSymptomIds(symptom.getSelectedSymptomIds());
         dto.setCreatedAt(symptom.getCreatedAt());
 
         
         
-        
-        
-        // 질병 요약 리스트 (질병 정보가 연관되어 있을 경우)
+        // selectedSymptomIds (JSON → List<Long>)
+        if (symptom.getSelectedSymptomIds() != null) {
+            try {
+                List<Long> ids = mapper.readValue(
+                        symptom.getSelectedSymptomIds(),
+                        new TypeReference<List<Long>>() {}
+                );
+                dto.setSelectedSymptomIds(ids);
+            } catch (Exception e) {
+                dto.setSelectedSymptomIds(Collections.emptyList());
+            }
+        } else {
+            dto.setSelectedSymptomIds(Collections.emptyList());
+        }
+
+        // 질병 요약 리스트 (suspectedDiseaseIds JSON → List<DiseaseSummaryDTO>)
         if (symptom.getSuspectedDiseaseIds() != null) {
             try {
-                List<Long> diseaseIds = SymptomResponseDTO.mapper.readValue(
-                    symptom.getSuspectedDiseaseIds(),
-                    new TypeReference<List<Long>>() {}
+                List<Long> diseaseIds = mapper.readValue(
+                        symptom.getSuspectedDiseaseIds(),
+                        new TypeReference<List<Long>>() {}
                 );
                 dto.setSuspectedDiseases(
-                    diseaseIds.stream()
-                              .map(id -> {
-                                  DiseaseSummaryDTO d = new DiseaseSummaryDTO();
-                                  d.setId(id);
-                                  return d;
-                              })
-                              .collect(Collectors.toList())
+                        diseaseIds.stream()
+                                  .map(id -> {
+                                      DiseaseSummaryDTO d = new DiseaseSummaryDTO();
+                                      d.setId(id);
+                                      return d;
+                                  })
+                                  .collect(Collectors.toList())
                 );
             } catch (Exception e) {
                 dto.setSuspectedDiseases(List.of());
             }
+        } else {
+            dto.setSuspectedDiseases(List.of());
         }
+
         return dto;
     }
 
