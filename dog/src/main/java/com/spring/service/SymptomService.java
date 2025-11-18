@@ -84,9 +84,8 @@ public class SymptomService {
             if (dto.getSelectedSymptomIds() != null && !dto.getSelectedSymptomIds().isEmpty()) {
 
                 // List<Long> → JSON 문자열 저장
-                existing.setSelectedSymptomIds(
-                        objectMapper.writeValueAsString(dto.getSelectedSymptomIds())
-                );
+                String selectedJson = objectMapper.writeValueAsString(dto.getSelectedSymptomIds());
+                existing.setSelectedSymptomIds(selectedJson);
 
                 List<Long> selectedIds = dto.getSelectedSymptomIds();
 
@@ -95,12 +94,12 @@ public class SymptomService {
                         .flatMap(id2 -> diseaseRepository.findBySymptomIds(id2).stream())
                         .distinct()
                         .toList();
-
-                existing.setSuspectedDiseaseIds(
-                        objectMapper.writeValueAsString(
-                                suspected.stream().map(Disease::getId).toList()
-                        )
+                
+                String suspectedJson = objectMapper.writeValueAsString(
+                        suspected.stream().map(Disease::getId).toList()
                 );
+
+                existing.setSuspectedDiseaseIds(suspectedJson);
             }
 
             Symptom updated = symptomRepository.save(existing);
