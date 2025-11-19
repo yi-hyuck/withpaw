@@ -1,6 +1,7 @@
 package com.spring.service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +29,34 @@ public class SymptomService {
     private final SymptomRepository symptomRepository;
     private final DiseaseRepository diseaseRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    // 공통: Symptom -> SymptomResponseDTO (질병 정보 포함)
+    private SymptomResponseDTO toResponse(Symptom symptom) {
+        try {
+            // suspectedDiseaseIds(JSON) -> List<Long>
+            List<Long> diseaseIds;
+            if (symptom.getSuspectedDiseaseIds() != null
+                    && !symptom.getSuspectedDiseaseIds().isBlank()) {
+                diseaseIds = objectMapper.readValue(
+                        symptom.getSuspectedDiseaseIds(),
+                        new TypeReference<List<Long>>() {}
+                );
+            } else {
+                diseaseIds = Collections.emptyList();
+            }
+
+            // id 리스트로 실제 Disease 조회
+            List<Disease> diseases = diseaseIds.isEmpty()
+                    ? List.of()
+                    : diseaseRepository.findAllById(diseaseIds);
+
+            return SymptomResponseDTO.fromEntityWithDiseases(symptom, diseases);
+
+        } catch (Exception e) {
+            // 파싱 실패 시 질병 정보 없이 반환
+            return SymptomResponseDTO.fromEntityWithDiseases(symptom, List.of());
+        }
+    }
 
     // 증상 기록 등록
     public SymptomResponseDTO create(SymptomRequestDTO dto) {

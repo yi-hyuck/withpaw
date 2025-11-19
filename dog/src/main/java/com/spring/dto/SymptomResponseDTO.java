@@ -56,32 +56,29 @@ public class SymptomResponseDTO {
         } else {
             dto.setSelectedSymptomIds(Collections.emptyList());
         }
+        dto.setSuspectedDiseases(Collections.emptyList());
 
-        // 질병 요약 리스트 (suspectedDiseaseIds JSON → List<DiseaseSummaryDTO>)
-        if (symptom.getSuspectedDiseaseIds() != null) {
-            try {
-                List<Long> diseaseIds = mapper.readValue(
-                        symptom.getSuspectedDiseaseIds(),
-                        new TypeReference<List<Long>>() {}
-                );
-                dto.setSuspectedDiseases(
-                        diseaseIds.stream()
-                                  .map(id -> {
-                                      DiseaseSummaryDTO d = new DiseaseSummaryDTO();
-                                      d.setId(id);
-                                      return d;
-                                  })
-                                  .collect(Collectors.toList())
-                );
-            } catch (Exception e) {
-                dto.setSuspectedDiseases(List.of());
-            }
+        return dto;
+    }
+	
+	
+	//service 에서 Disease 리스트를 넘겨주면, 그걸로 suspectedDiseases
+    public static SymptomResponseDTO fromEntityWithDiseases(Symptom symptom, List<Disease> diseases) {
+        SymptomResponseDTO dto = fromEntity(symptom);
+
+        if (diseases != null && !diseases.isEmpty()) {
+            dto.setSuspectedDiseases(
+                    diseases.stream()
+                            .map(DiseaseSummaryDTO::fromEntity)
+                            .collect(Collectors.toList())
+            );
         } else {
             dto.setSuspectedDiseases(List.of());
         }
 
         return dto;
     }
+	
 
     @Getter
     @Setter
