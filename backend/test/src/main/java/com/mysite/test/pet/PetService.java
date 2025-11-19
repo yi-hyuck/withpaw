@@ -1,6 +1,7 @@
 package com.mysite.test.pet;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -45,5 +46,4 @@ public class PetService {
         pet.setWeight(weight);
         this.petRepository.save(pet);
     }
-
 }

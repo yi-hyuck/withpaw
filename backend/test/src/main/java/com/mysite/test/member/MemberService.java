@@ -30,7 +30,7 @@ public class MemberService {
         member.setLoginId(dto.getLoginId());
         member.setPassword(passwordEncoder.encode(dto.getPassword())); 
         member.setEmail(dto.getEmail());
-        member.setRole(MemberRole.MEMBER);
+//        member.setRole(MemberRole.MEMBER);
         this.memberRepository.save(member);
         
         if (dto.getPets() != null && !dto.getPets().isEmpty()) {
@@ -47,5 +47,7 @@ public class MemberService {
             }
         }
     }
+    
+    
 
 }

@@ -1,4 +1,4 @@
-import React, { use } from "react";
+import React, { use, useEffect } from "react";
 import { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Button, } from 'react-native';
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -7,11 +7,13 @@ import { useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TextInput, Icon } from "react-native-paper";
 import { RootStackParamList } from './types';
+import axios from "axios";
 
 import App from './App';
 import DogInfo from './DogInfo';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const API_URL = "http://10.0.2.2:8090";
 
 function SignUp_Screen(){
   return(
@@ -27,19 +29,59 @@ type SignUpScreenNavigationProp = NativeStackNavigationProp<
   'SignUp'
 >;
 
-function SignUp(){
+function SignUp (){
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
-  const {control, handleSubmit, formState: {errors}} = useForm();
+  const {control, handleSubmit, formState: {errors}, setError, watch} = useForm();
 
-  const onSubmit = (data:any)=>{
-    console.log('data', data);
-    navigation.navigate('DogInfo', {userData:data});
+  const password = watch('password');
+
+  const onSubmit = async (data:any)=>{
+    if(data.password !== data.passwordChk){
+      setError("passwordChk", {type:"manual", message: "비밀번호가 일치하지 않습니다."})
+      return;
+    }
+
+    const step1Data = {
+      loginId: data.userid,
+      password: data.password,
+      email: data.email
+    }
+
+    try{
+      const response = await axios.post(`${API_URL}/member/signup`, step1Data);
+      navigation.navigate('DogInfo', {userData: step1Data});
+    } catch (error: any) {
+      console.error('Signup Step 1 Error:', error.response?.data || error.message);
+        
+        const errorData = error.response?.data;
+        if (errorData) {
+            // 백엔드에서 받은 필드별 에러를 표시
+            if (errorData.loginId) {
+                setError("userid", { type: "server", message: errorData.loginId });
+            }
+            if (errorData.email) {
+                setError("email", { type: "server", message: errorData.email });
+            }
+            if (errorData.password) {
+                setError("password", { type: "server", message: errorData.password });
+            }
+            // 기타 비즈니스 로직 에러 (중복 등)
+            if (errorData.field && errorData.error) {
+                if (errorData.field === 'loginId') {
+                    setError("userid", { type: "server", message: errorData.error });
+                }
+            }
+        }
+    }
   }
 
   //비밀번호 보이게
   const [seePw, setSeePw] = useState(false);
   const [seePwChk, setSeePwChk] = useState(false);
+
+
+
 
   return(
     <KeyboardAwareScrollView>

@@ -1,14 +1,16 @@
 import React from "react";
 import { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Pressable, Alert } from 'react-native';
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useForm, Controller } from "react-hook-form";
-import { useNavigation, RouteProp } from "@react-navigation/native";
+import { useNavigation, RouteProp, useRoute } from "@react-navigation/native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from './types';
+import axios from 'axios';
 
 const Stack = createNativeStackNavigator();
+const API_URL = "http://10.0.2.2:8090";
 
 //회원가입 정보 불러올 때 필요
 type DogInfoRouteProp = RouteProp<RootStackParamList, 'DogInfo'>;
@@ -39,11 +41,11 @@ const formatDate = (date:Date, f:string) => {
 }
 
 function DogInfo(){
-    //{route}:{route:DogInfoRouteProp}
-    // const{userData} = route.params;
-    // console.log(userData);
-
+    const route = useRoute<DogInfoRouteProp>();
     const navigation = useNavigation<DogInfoScreenNavigationProp>();
+
+    const {userData} = route.params;
+    const [isLoading, setIsLoading] = useState(false);
 
     //폼 관리
     const {control, handleSubmit, formState: {errors}, setValue, watch} = useForm({
@@ -53,7 +55,7 @@ function DogInfo(){
         dogBirth: '',
         dogBreed: '',
         dogWeight: '',
-        neutering: '',
+        neutering: 0,
       }
     });
 
@@ -69,8 +71,49 @@ function DogInfo(){
     const [selectNeutering, setSelectNeutering] = useState('');
     
     //Signup에서 사용자 정보 받아옴
-    const onSubmit = (data:any)=>{
-      console.log('data', data);
+    const onSubmit = async (data:any)=>{
+      if(isLoading) return;
+
+      setIsLoading(true);
+
+      const petInfo = {
+        name: data.dogName,
+        species: data.dogBreed,
+        gender: data.dogGender,
+        birthDate: data.dogBirth,
+        neuter: data.neutering === 'yes',
+        weight: parseFloat(data.dogWeight)
+      }
+
+      const finalData = {
+        ...userData,
+        pets: [petInfo]
+      }
+
+      try{
+        const response = await axios.post(`${API_URL}/member/signup/pet`, finalData);
+      } catch (error: any){
+        console.error('Signup Complete Error:', error.response?.data || error.message);
+            
+            const errorData = error.response?.data;
+            if (errorData) {
+                if (errorData.field && errorData.error) {
+                    // 아이디 중복 에러 등 특정 필드 에러 처리
+                    if (errorData.field === 'loginId') {
+                        Alert.alert("가입 실패", "회원가입 중 오류가 발생했습니다: " + errorData.error);
+                    } 
+                    // 반려동물 필수 에러 등
+                    else if (errorData.field === 'pets') {
+                        Alert.alert("필수 정보 누락", errorData.error);
+                    }
+                } else if (errorData.message) {
+                    Alert.alert("가입 실패", errorData.message);
+                }
+            } else {
+                Alert.alert("서버 연결 실패", "서버에 연결할 수 없습니다. 다시 시도해 주세요.");
+            }
+      }
+
       navigation.reset({index:0, routes:[{name:'Home'}]});
     }
 
@@ -94,8 +137,9 @@ function DogInfo(){
 
     //중성화 설정
     const handleNeuteringSelect = (value: string) => {
+      const numericValue = Number(value);
       setSelectNeutering(value);
-      setValue('neutering', value, {shouldValidate: true});
+      setValue('neutering', numericValue, {shouldValidate: true});
     }
     
     const renderNeuteringButton = (label:string, value: string) => (
@@ -122,7 +166,7 @@ function DogInfo(){
 
     //날짜 확정
     const handleConfirm = (date:Date)=> {
-      const formattedDate = formatDate(date, 'yyyy/MM/dd');
+      const formattedDate = formatDate(date, 'yyyy-MM-dd');
       setValue('dogBirth', formattedDate, {shouldValidate:true});
       setVisible(false);
     }
@@ -160,8 +204,8 @@ function DogInfo(){
             render={()=>(
               <View>
                 <View style={styles.buttonGroup}>
-                  {renderButton('남', 'male')}
-                  {renderButton('여', 'female')}
+                  {renderButton('남', 'M')}
+                  {renderButton('여', 'F')}
                 </View>
                 {errors?.dogGender?.message && <Text style={styles.error}>{String(errors.dogGender.message)}</Text>}
               </View>
@@ -177,8 +221,8 @@ function DogInfo(){
             render={()=>(
               <View>
                 <View style={styles.buttonGroup}>
-                  {renderNeuteringButton('O', 'yes')}
-                  {renderNeuteringButton('X', 'no')}
+                  {renderNeuteringButton('O', '1')}
+                  {renderNeuteringButton('X', '0')}
                 </View>
                 {errors?.neutering?.message && <Text style={styles.error}>{String(errors.neutering.message)}</Text>}
               </View>

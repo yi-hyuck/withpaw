@@ -8,6 +8,9 @@ import { useNavigation } from "@react-navigation/native";
 import Maps from './Maps';
 
 function Login() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   //아이디 비번 변수
   const[values, setValues] = useState({
     userid: "",
@@ -32,6 +35,7 @@ function Login() {
       ...values,
       [name]:text,
     });
+    setError(null);
   };
 
   const handleBlur=(name:string)=>{
@@ -47,6 +51,52 @@ function Login() {
   >;
 
   const navigation = useNavigation<LoginScreenNavigationProp>();
+
+  const loginHandler = async () => {
+    console.log("Login button pressed");
+    if(loading) return;
+
+    if(!values.userid || !values.password){
+      setError("아이디와 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const payload = {
+      username: values.userid, 
+      password: values.password,
+    };
+
+    console.log("RN Sending Payload:", payload);
+
+    try{
+      const response = await fetch('http://10.0.2.2:8090/member/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          loginId: values.userid,
+          password: values.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if(response.ok){
+        navigation.reset({index:0, routes:[{name:'NaviBar'}]});
+      } else {
+        const errorMessage = data.message || "아이디 또는 비밀번호가 올바르지 않습니다.";
+        setError(errorMessage);
+      }
+    } catch (err) {
+      setError("로그인 중 오류가 발생했습니다.")
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return(
     <View style={styles.container}>
@@ -67,9 +117,10 @@ function Login() {
         autoCapitalize="none"
         onBlur={()=>handleBlur("password")}
       />
+      {error && <Text style={styles.errorText}>{error}</Text>}
       <TouchableOpacity
         style={styles.button}
-        onPress={()=>navigation.reset({index:0, routes:[{name:'NaviBar'}]})}>
+        onPress={loginHandler}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
     </View>

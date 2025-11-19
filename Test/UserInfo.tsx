@@ -8,6 +8,7 @@ import { useForm, Controller } from "react-hook-form";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { TextInput, } from "react-native-paper";
 
+
 //임시데이터
 interface userType{
     id: string;

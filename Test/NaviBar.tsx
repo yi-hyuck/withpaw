@@ -163,6 +163,40 @@ function TabNaviBar() {
 }
 
 function CustomDrawerContent(props:any){
+  //로그아웃
+  const handleLogout = async () => {
+    try{
+        const response = await fetch('http://10.0.2.2:8090/member/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if(response.ok || response.status === 200 || response.status === 302){
+        console.log("logout successful");
+        
+        const naviBarStack = props.navigation.getParent();
+        if(naviBarStack){
+          const rootStack = naviBarStack.getParent();
+          if(rootStack && rootStack.reset){
+            rootStack.reset({
+              index: 0,
+              routes: [{name: 'Home'}]
+            })
+          }
+        }
+      } else {
+        console.error("Logout failed", response.status);
+      }
+
+    } catch (error){
+      console.error("Logout error:", error);
+    }
+  }
+
+
+
   return(
     <DrawerContentScrollView {...props}>
       <DrawerItem
@@ -186,18 +220,7 @@ function CustomDrawerContent(props:any){
         }}
         onPress={()=>{
           props.navigation.closeDrawer();
-          const naviBarStack = props.navigation.getParent();
-
-          if(naviBarStack){
-            const rootStack = naviBarStack.getParent();
-
-            if(rootStack && rootStack.reset){
-              rootStack.reset({
-                index: 0,
-                routes: [{name: 'Home'}]
-              })
-            }
-          }
+          handleLogout();
         }}
       />
     </DrawerContentScrollView>
