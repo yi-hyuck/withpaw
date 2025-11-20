@@ -30,13 +30,29 @@ public class PlaceService {
 	private final PlaceRepository placeRepository;
 
 	private final WebClient webClient;
+	
+    private static final int MIN_RADIUS = 1;
+    private static final int MAX_RADIUS = 20_000;
+
+    private int clampRadius(int r) {
+        if (r < MIN_RADIUS) return MIN_RADIUS;
+        if (r > MAX_RADIUS) return MAX_RADIUS;
+        return r;
+    }
+
 
 	public List<PlaceResponseDTO> searchPlaces(String query, double lat, double lng, int radius) {
 		try {
+			int effectiveRadius = clampRadius(radius);
 			// URI 생성
-			URI uri = URI.create("https://dapi.kakao.com/v2/local/search/keyword.json" + "?query="
-					+ URLEncoder.encode(query, StandardCharsets.UTF_8) + "&x=" + lng + "&y=" + lat + "&radius="
-					+ radius);
+			URI uri = URI.create(
+					  "https://dapi.kakao.com/v2/local/search/category.json"
+					  + "?category_group_code=HP8"
+					  + "&x=" + lng
+					  + "&y=" + lat
+					  + "&radius=" + effectiveRadius
+					  + "&sort=distance"
+					);
 
 			log.info("Requesting Kakao API: {}", uri);
 
@@ -51,29 +67,54 @@ public class PlaceService {
 
 			List<Map<String, Object>> documents = (List<Map<String, Object>>) response.get("documents");
 
-			for (Map<String, Object> doc : documents) {
-				String name = (String) doc.get("place_name");
-				String address = (String) doc.get("address_name");
-
-				// 이미 존재하는지 확인
-				Place place = placeRepository.findByNameAndAddress(name, address)
-						.orElseGet(() -> Place.builder().name(name).address(address)
-								.roadAddress((String) doc.get("road_address_name")).phone((String) doc.get("phone"))
-								.category((String) doc.get("category_name"))
-								.latitude(Double.parseDouble((String) doc.get("y")))
-								.longitude(Double.parseDouble((String) doc.get("x")))
-								.placeUrl((String) doc.get("place_url")).source("KAKAO").build());
-
-				// 저장 (신규면 insert, 있으면 update)
-				placeRepository.save(place);
-			}
-
-			log.info("Kakao API Raw Response: {}", response);
-
 			if (documents == null || documents.isEmpty()) {
 				log.warn("검색 결과 없음: {}", query);
 				return List.of();
 			}
+			
+			for (Map<String, Object> doc : documents) {
+					
+				String name = (String) doc.get("place_name");
+				String address = (String) doc.get("address_name");
+				
+			    double latValue = Double.parseDouble((String) doc.get("y"));
+			    double lngValue = Double.parseDouble((String) doc.get("x"));
+			    if (latValue < -90 || latValue > 90 || lngValue < -180 || lngValue > 180) {
+			        log.warn("Invalid coordinate from Kakao: {}, {}", latValue, lngValue);
+			        continue;
+			    }
+
+				// 이미 존재하는지 확인
+			    var existing = placeRepository.findByNameAndAddress(name, address);
+			    if (existing.isPresent()) {
+			        Place p = existing.get();
+			        p.setRoadAddress((String) doc.get("road_address_name"));
+			        p.setPhone((String) doc.get("phone"));
+			        p.setCategory((String) doc.get("category_name"));
+			        p.setLatitude(latValue);
+			        p.setLongitude(lngValue);
+			        p.setPlaceUrl((String) doc.get("place_url"));
+			        p.setSource("KAKAO");
+			        placeRepository.save(p);
+			    } else {
+			        placeRepository.save(
+			            Place.builder()
+			                 .name(name)
+			                 .address(address)
+			                 .roadAddress((String) doc.get("road_address_name"))
+			                 .phone((String) doc.get("phone"))
+			                 .category((String) doc.get("category_name"))
+			                 .latitude(latValue)
+			                 .longitude(lngValue)
+			                 .placeUrl((String) doc.get("place_url"))
+			                 .source("KAKAO")
+			                 .build()
+			        );
+			    }
+				// 저장 (신규면 insert, 있으면 update)
+			}
+
+			log.info("Kakao API Raw Response: {}", response);
 
 			// DTO 변환
 			return documents.stream().map(doc -> {
@@ -82,8 +123,8 @@ public class PlaceService {
 				dto.setAddress((String) doc.get("address_name"));
 				dto.setRoadAddress((String) doc.get("road_address_name"));
 				dto.setPhone((String) doc.get("phone"));
-				dto.setLatitude((String) doc.get("y"));
-				dto.setLongitude((String) doc.get("x"));
+				dto.setLatitude(Double.parseDouble((String) doc.get("y")));
+				dto.setLongitude(Double.parseDouble((String) doc.get("x")));
 				dto.setUrl((String) doc.get("place_url"));
 				return dto;
 			}).toList();

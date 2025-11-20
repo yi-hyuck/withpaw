@@ -10,7 +10,7 @@ public class PlaceResponseDTO {
     private String address;       // 지번 주소
     private String roadAddress;   // 도로명 주소
     private String phone;         // 전화번호
-    private String latitude;      // 위도 (y)
-    private String longitude;     // 경도 (x)
+    private Double latitude;      // 위도 (y)
+    private Double longitude;     // 경도 (x)
     private String url;           // 장소 상세 URL
 }

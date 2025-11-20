@@ -30,7 +30,9 @@ public class PlaceController {
             @RequestParam(name = "lng") double lng,
             @RequestParam(name = "radius", defaultValue = "2000") int radius
     ) {
-        var places = placeService.searchPlaces(query, lat, lng, radius);
+    	
+        int clamped = Math.max(1, Math.min(radius, 20_000));
+        var places = placeService.searchPlaces(query, lat, lng, clamped);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "장소 검색 성공", places));
     }
     
