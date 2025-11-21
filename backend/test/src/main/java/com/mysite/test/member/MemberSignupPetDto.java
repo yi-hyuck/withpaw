@@ -31,5 +31,5 @@ public class MemberSignupPetDto implements Serializable {
     @Valid 
     private List<PetForm> pets; 
     private boolean step1Completed = false;
-
+	
 }

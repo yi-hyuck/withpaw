@@ -30,11 +30,11 @@
                 <div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" th:field="*{pets[__${status.index}__].gender}" value="MALE">
-                        <label class="form-check-label" th:for="*{pets[__${status.index}__].gender}">남아 (MALE)</label>
+                        <label class="form-check-label" th:for="*{pets[__${status.index}__].gender}">남자</label>
                     </div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" th:field="*{pets[__${status.index}__].gender}" value="FEMALE">
-                        <label class="form-check-label" th:for="*{pets[__${status.index}__].gender}">여아 (FEMALE)</label>
+                        <label class="form-check-label" th:for="*{pets[__${status.index}__].gender}">여자</label>
                     </div>
                 </div>
                  <div th:if="${#fields.hasErrors('pets[__${status.index}__].gender')}" th:errors="*{pets[__${status.index}__].gender}" class="invalid-feedback d-block"></div>
@@ -47,9 +47,9 @@
             </div>
             
             <div class="mb-3">
-                <label th:for="*{pets[__${status.index}__].species}" class="form-label">품종</label>
-                <input type="text" th:field="*{pets[__${status.index}__].species}" class="form-control" th:errorclass="is-invalid">
-                <div th:if="${#fields.hasErrors('pets[__${status.index}__].species')}" th:errors="*{pets[__${status.index}__].species}" class="invalid-feedback"></div>
+                <label th:for="*{pets[__${status.index}__].breed}" class="form-label">품종</label>
+                <input type="text" th:field="*{pets[__${status.index}__].breed}" class="form-control" th:errorclass="is-invalid">
+                <div th:if="${#fields.hasErrors('pets[__${status.index}__].breed')}" th:errors="*{pets[__${status.index}__].breed}" class="invalid-feedback"></div>
             </div>
             
             <div class="mb-3">
@@ -57,11 +57,11 @@
                 <div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" th:field="*{pets[__${status.index}__].neuter}" value="true" th:id="|neuter${status.index}-true|">
-                        <label class="form-check-label" th:for="|neuter${status.index}-true|">예</label>
+                        <label class="form-check-label" th:for="|neuter${status.index}-true|">O</label>
                     </div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" th:field="*{pets[__${status.index}__].neuter}" value="false" th:id="|neuter${status.index}-false|">
-                        <label class="form-check-label" th:for="|neuter${status.index}-false|">아니오</label>
+                        <label class="form-check-label" th:for="|neuter${status.index}-false|">X</label>
                     </div>
                 </div>
                 <div th:if="${#fields.hasErrors('pets[__${status.index}__].neuter')}" th:errors="*{pets[__${status.index}__].neuter}" class="invalid-feedback d-block"></div>

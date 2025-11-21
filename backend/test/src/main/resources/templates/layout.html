@@ -25,8 +25,19 @@
 					<a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/member/logout}">로그아웃</a>
                 </li>
 				<li class="nav-item">
-					<a class="nav-link" th:href="@{/member/signup}">회원가입</a>
-			    </li>
+					<a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/member/mypage}">회원정보 관리</a>
+				</li>
+				
+				<li class="nav-item">
+					<a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/pet/manage}">반려동물 정보 관리</a>
+				</li>
+				                
+				<li class="nav-item">
+			    	<a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/member/signup}">회원가입</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/chatbot}">챗봇</a>
+				</li>
             </ul>
         </div>
     </div>

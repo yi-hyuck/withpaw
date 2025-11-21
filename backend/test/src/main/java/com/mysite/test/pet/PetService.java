@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mysite.test.DataNotFoundException;
 import com.mysite.test.member.Member;
 
 import lombok.RequiredArgsConstructor;
@@ -46,4 +47,45 @@ public class PetService {
         pet.setWeight(weight);
         this.petRepository.save(pet);
     }
+    
+    // Member 객체를 이용해 반려동물 목록을 조회하는 메서드(챗봇)
+    public List<Pet> getPetsByMember(Member owner) {
+        return petRepository.findByOwner(owner);
+    }
+    
+    
+    
+    // 펫 ID로 단일 펫 조회
+    public Pet getPet(Integer petId) {
+        Optional<Pet> pet = this.petRepository.findById(petId);
+        if (pet.isPresent()) {
+            return pet.get();
+        } else {
+            // 해당 ID의 펫이 없을 경우 예외 처리
+            throw new DataNotFoundException("pet not found");
+        }
+    }
+    
+    
+    // 수정 기능
+    @Transactional
+    public void update(Pet pet, String name, LocalDate birthDate, Boolean neuter, Double weight) {
+                       
+        
+        // 정보 업데이트
+        pet.setPetname(name);
+        pet.setBirthdate(birthDate);
+        pet.setNeuter(neuter);
+        pet.setWeight(weight);
+    }
+    
+
+    // 삭제 기능
+    public void delete(Pet pet) {
+        this.petRepository.delete(pet);
+    }
+    
+    
+    
+
 }

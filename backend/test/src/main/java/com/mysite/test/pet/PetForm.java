@@ -12,11 +12,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PetForm {
+	private Integer petId;
+	
 	@NotBlank(message = "이름은 필수 항목입니다.")
     private String name; 
 
     @NotBlank(message = "종류는 필수 항목입니다.")
-    private String species; 
+    private String breed; 
 
     @NotBlank(message = "성별은 필수 항목입니다.")
     private String gender;

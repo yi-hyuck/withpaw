@@ -3,9 +3,8 @@ package com.mysite.test.member;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,18 +18,16 @@ import lombok.RequiredArgsConstructor;
 public class MemberSecurityService implements UserDetailsService {
 
     private final MemberRepository memberRepository;
-    private static final Logger log = LoggerFactory.getLogger(MemberSecurityService.class);
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    	log.debug("Attempting to load user by username: {}", username);
-    	
+        
     	// 로그인 ID로 회원 정보 조회
         Member member = memberRepository.findByLoginId(username) 
             .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
         
         List<GrantedAuthority> authorities = new ArrayList<>();
-//        authorities.add(new SimpleGrantedAuthority(member.getRole().getKey()));
+        authorities.add(new SimpleGrantedAuthority(member.getRole().getKey()));
         return new User(member.getLoginId(), member.getPassword(), authorities); 
     }
 }
