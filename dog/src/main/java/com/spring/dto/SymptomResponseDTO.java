@@ -22,22 +22,18 @@ public class SymptomResponseDTO {
 	
 	private Long id; // 증상 기록 ID
 	private Long memberId; // 회원 ID
-//	private Long petId; // 반려동물 ID
 	private LocalDateTime symptomDate; // 기록된 날짜
+	private String title; //제목
 	private String description; // 기록 내용
-//	private List<Long> selectedSymptomIds; // 선택된 증상 ID 목록
-
-//	private List<DiseaseSummaryDTO> suspectedDiseases; // 의심 질병 리스트
 	private LocalDateTime createdAt; // 생성 시각
 
 	public static SymptomResponseDTO fromEntity(Symptom symptom) {
         SymptomResponseDTO dto = new SymptomResponseDTO();
         dto.setId(symptom.getId());
         dto.setMemberId(symptom.getMemberId());
-//        dto.setPetId(symptom.getPetId());
         dto.setSymptomDate(symptom.getSymptomDate());
+        dto.setTitle(symptom.getTitle());
         dto.setDescription(symptom.getDescription());
-//        dto.setSelectedSymptomIds(symptom.getSelectedSymptomIds());
         dto.setCreatedAt(symptom.getCreatedAt());
 
         return dto;

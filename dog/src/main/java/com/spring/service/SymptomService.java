@@ -41,10 +41,10 @@ public class SymptomService {
                 .orElseThrow(() -> new NotFoundException("해당 증상 기록이 존재하지 않습니다."));
 
         try {
+            if (dto.getTitle() != null && !dto.getTitle().isBlank())
+                existing.setTitle(dto.getTitle());
             if (dto.getDescription() != null && !dto.getDescription().isBlank())
                 existing.setDescription(dto.getDescription());
-            if (dto.getSymptomDate() != null)
-                existing.setSymptomDate(dto.getSymptomDate());
 
             return SymptomResponseDTO.fromEntity(symptomRepository.save(existing));
         } catch (Exception e) {

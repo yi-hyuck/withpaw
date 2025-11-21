@@ -19,8 +19,8 @@ public class SymptomRequestDTO {
 	@NotNull(message="회원id를 입력해야 합니다.")
 	@Positive(message = "회원 ID는 양수여야 합니다.")
 	private Long memberId;
-
-	@NotNull(message="날짜를 지정해야 합니다.")
+    @NotBlank(message="제목을 입력해야 합니다.")
+    private String title;
     private LocalDateTime symptomDate;
 	@NotBlank(message = "증상 설명을 입력해야 합니다.")
     private String description;
@@ -29,10 +29,9 @@ public class SymptomRequestDTO {
     public Symptom toEntity() {
         Symptom s = new Symptom();
         s.setMemberId(memberId);
-//        s.setPetId(petId);
         s.setSymptomDate(symptomDate);
+        s.setTitle(title);
         s.setDescription(description);
-
         return s;
     }
     
