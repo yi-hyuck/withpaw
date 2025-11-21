@@ -119,6 +119,13 @@ dependencies {
     }
 
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.google.android.gms:play-services-location:20.0.0'
 }
 
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.android.gms:play-services-location:20.0.0'
+    }
+}
