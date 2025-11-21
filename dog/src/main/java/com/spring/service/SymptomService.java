@@ -1,22 +1,16 @@
 package com.spring.service;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spring.domain.Disease;
 import com.spring.domain.Symptom;
 import com.spring.dto.SymptomRequestDTO;
 import com.spring.dto.SymptomResponseDTO;
 import com.spring.exception.BadRequestException;
 import com.spring.exception.InternalServerException;
 import com.spring.exception.NotFoundException;
-import com.spring.repository.DiseaseRepository;
 import com.spring.repository.SymptomRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,69 +21,14 @@ import lombok.RequiredArgsConstructor;
 public class SymptomService {
 
     private final SymptomRepository symptomRepository;
-    private final DiseaseRepository diseaseRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    
-    // 공통: Symptom -> SymptomResponseDTO (질병 정보 포함)
-    private SymptomResponseDTO toResponse(Symptom symptom) {
-        try {
-            // suspectedDiseaseIds(JSON) -> List<Long>
-            List<Long> diseaseIds;
-            if (symptom.getSuspectedDiseaseIds() != null
-                    && !symptom.getSuspectedDiseaseIds().isBlank()) {
-                diseaseIds = objectMapper.readValue(
-                        symptom.getSuspectedDiseaseIds(),
-                        new TypeReference<List<Long>>() {}
-                );
-            } else {
-                diseaseIds = Collections.emptyList();
-            }
-
-            // id 리스트로 실제 Disease 조회
-            List<Disease> diseases = diseaseIds.isEmpty()
-                    ? List.of()
-                    : diseaseRepository.findAllById(diseaseIds);
-
-            return SymptomResponseDTO.fromEntityWithDiseases(symptom, diseases);
-
-        } catch (Exception e) {
-            // 파싱 실패 시 질병 정보 없이 반환
-            return SymptomResponseDTO.fromEntityWithDiseases(symptom, List.of());
-        }
-    }
-
+        
     // 증상 기록 등록
     public SymptomResponseDTO create(SymptomRequestDTO dto) {
+        if (dto == null) throw new BadRequestException("요청 데이터가 비어 있습니다.");
 
-        if (dto.getSelectedSymptomIds() == null || dto.getSelectedSymptomIds().isEmpty())
-            throw new BadRequestException("선택된 증상 목록이 비어 있습니다.");
-
-        Symptom symptom = new Symptom();
-        symptom.setMemberId(dto.getMemberId());
-        symptom.setPetId(dto.getPetId());
-        symptom.setSymptomDate(dto.getSymptomDate());
-        symptom.setDescription(dto.getDescription());
-        symptom.setCreatedAt(LocalDateTime.now());
-
+        Symptom symptom = dto.toEntity();
         try {
-            // List<Long> → JSON
-            String selectedJson = objectMapper.writeValueAsString(dto.getSelectedSymptomIds());
-            symptom.setSelectedSymptomIds(selectedJson);
-
-            // 관련 질병 찾기
-            List<Disease> suspected = dto.getSelectedSymptomIds().stream()
-                    .flatMap(id -> diseaseRepository.findBySymptomIds(id).stream())
-                    .distinct()
-                    .toList();
-
-            String suspectedJson = objectMapper.writeValueAsString(
-                    suspected.stream().map(Disease::getId).toList()
-            );
-            symptom.setSuspectedDiseaseIds(suspectedJson);
-
-            Symptom saved = symptomRepository.save(symptom);
-            return SymptomResponseDTO.fromEntity(saved);
-
+            return SymptomResponseDTO.fromEntity(symptomRepository.save(symptom));
         } catch (Exception e) {
             throw new InternalServerException("증상 등록 중 오류가 발생했습니다: " + e.getMessage());
         }
@@ -98,44 +37,16 @@ public class SymptomService {
 
     // 증상 기록 수정
     public SymptomResponseDTO update(Long id, SymptomRequestDTO dto) {
-
         Symptom existing = symptomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("해당 증상 기록이 존재하지 않습니다."));
 
         try {
             if (dto.getDescription() != null && !dto.getDescription().isBlank())
                 existing.setDescription(dto.getDescription());
-
             if (dto.getSymptomDate() != null)
                 existing.setSymptomDate(dto.getSymptomDate());
 
-            // 선택 증상 변경
-            if (dto.getSelectedSymptomIds() != null && !dto.getSelectedSymptomIds().isEmpty()) {
-
-                // List<Long> → JSON 문자열 저장
-                String selectedJson = objectMapper.writeValueAsString(dto.getSelectedSymptomIds());
-                existing.setSelectedSymptomIds(selectedJson);
-
-                List<Long> selectedIds = dto.getSelectedSymptomIds();
-
-                // 관련 질병 추론
-                List<Disease> suspected = selectedIds.stream()
-                        .flatMap(id2 -> diseaseRepository.findBySymptomIds(id2).stream())
-                        .distinct()
-                        .toList();
-                
-                String suspectedJson = objectMapper.writeValueAsString(
-                        suspected.stream().map(Disease::getId).toList()
-                );
-
-                existing.setSuspectedDiseaseIds(suspectedJson);
-            }
-
-            Symptom updated = symptomRepository.save(existing);
-            return SymptomResponseDTO.fromEntity(updated);
-
-        } catch (BadRequestException | NotFoundException e) {
-            throw e;
+            return SymptomResponseDTO.fromEntity(symptomRepository.save(existing));
         } catch (Exception e) {
             throw new InternalServerException("증상 수정 중 오류가 발생했습니다: " + e.getMessage());
         }

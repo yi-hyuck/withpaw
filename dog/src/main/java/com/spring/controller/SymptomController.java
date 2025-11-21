@@ -37,16 +37,6 @@ public class SymptomController {
                 .body(ApiResponse.success(HttpStatus.CREATED, "증상 기록 등록 성공", result));
     }
 
-//    // 특정 회원 + 반려동물 증상 조회
-//    @GetMapping("/member/{memberId}/pet/{petId}")
-//    public ResponseEntity<ApiResponse<List<SymptomResponseDTO>>> getByMemberAndPet(
-//            @PathVariable Long memberId,
-//            @PathVariable Long petId) {
-//
-//        List<SymptomResponseDTO> list = symptomService.getByMemberAndPet(memberId, petId);
-//        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "회원+반려동물 증상 기록 조회 성공", list));
-//    }
-    
     // 특정 회원의 모든 증상 기록 조회
     @GetMapping("/member/{memberId}")
     public ResponseEntity<ApiResponse<List<SymptomResponseDTO>>> getByMember(@PathVariable("memberId") Long memberId) {

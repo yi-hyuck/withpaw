@@ -22,78 +22,27 @@ public class SymptomResponseDTO {
 	
 	private Long id; // 증상 기록 ID
 	private Long memberId; // 회원 ID
-	private Long petId; // 반려동물 ID
+//	private Long petId; // 반려동물 ID
 	private LocalDateTime symptomDate; // 기록된 날짜
 	private String description; // 기록 내용
-	private List<Long> selectedSymptomIds; // 선택된 증상 ID 목록
+//	private List<Long> selectedSymptomIds; // 선택된 증상 ID 목록
 
-	private List<DiseaseSummaryDTO> suspectedDiseases; // 의심 질병 리스트
+//	private List<DiseaseSummaryDTO> suspectedDiseases; // 의심 질병 리스트
 	private LocalDateTime createdAt; // 생성 시각
 
 	public static SymptomResponseDTO fromEntity(Symptom symptom) {
         SymptomResponseDTO dto = new SymptomResponseDTO();
         dto.setId(symptom.getId());
         dto.setMemberId(symptom.getMemberId());
-        dto.setPetId(symptom.getPetId());
+//        dto.setPetId(symptom.getPetId());
         dto.setSymptomDate(symptom.getSymptomDate());
         dto.setDescription(symptom.getDescription());
-        //dto.setSelectedSymptomIds(symptom.getSelectedSymptomIds());
+//        dto.setSelectedSymptomIds(symptom.getSelectedSymptomIds());
         dto.setCreatedAt(symptom.getCreatedAt());
 
-        
-        
-        // selectedSymptomIds (JSON → List<Long>)
-        if (symptom.getSelectedSymptomIds() != null) {
-            try {
-                List<Long> ids = mapper.readValue(
-                        symptom.getSelectedSymptomIds(),
-                        new TypeReference<List<Long>>() {}
-                );
-                dto.setSelectedSymptomIds(ids);
-            } catch (Exception e) {
-                dto.setSelectedSymptomIds(Collections.emptyList());
-            }
-        } else {
-            dto.setSelectedSymptomIds(Collections.emptyList());
-        }
-        dto.setSuspectedDiseases(Collections.emptyList());
-
-        return dto;
-    }
-	
-	
-	//service 에서 Disease 리스트를 넘겨주면, 그걸로 suspectedDiseases
-    public static SymptomResponseDTO fromEntityWithDiseases(Symptom symptom, List<Disease> diseases) {
-        SymptomResponseDTO dto = fromEntity(symptom);
-
-        if (diseases != null && !diseases.isEmpty()) {
-            dto.setSuspectedDiseases(
-                    diseases.stream()
-                            .map(DiseaseSummaryDTO::fromEntity)
-                            .collect(Collectors.toList())
-            );
-        } else {
-            dto.setSuspectedDiseases(List.of());
-        }
-
         return dto;
     }
 	
 
-    @Getter
-    @Setter
-    public static class DiseaseSummaryDTO {
-        private Long id;
-        private String name;
-        private String description;
-
-        public static DiseaseSummaryDTO fromEntity(Disease disease) {
-            DiseaseSummaryDTO dto = new DiseaseSummaryDTO();
-            dto.setId(disease.getId());
-            dto.setName(disease.getName());
-            dto.setDescription(disease.getDescription());
-            return dto;
-        }
-    }
 }
 
