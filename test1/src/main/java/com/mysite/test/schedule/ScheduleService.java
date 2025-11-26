@@ -108,6 +108,17 @@ public class ScheduleService {
             if (dto.getRecurring() != null) {
                 existing.setRecurring(dto.getRecurring());
             }
+            
+            if (dto.getScheduleTime() != null) {
+                existing.setScheduleTime(dto.getScheduleTime());
+            }
+            
+            if (dto.getRemindBeforeMinutes() != null) {
+                if (dto.getRemindBeforeMinutes() < 1) {
+                    throw new BadRequestException("리마인드 분은 1 이상이어야 합니다.");
+                }
+                existing.setRemindBeforeMinutes(dto.getRemindBeforeMinutes());
+            }
 
             if (isRecurring) {
                 // recurrenceRule이 null이면 새로 생성

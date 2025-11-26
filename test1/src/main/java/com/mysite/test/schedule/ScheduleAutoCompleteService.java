@@ -16,7 +16,7 @@ public class ScheduleAutoCompleteService {
     private final ScheduleInstanceRepository instanceRepository;
 
     // 5분마다 자동 실행
-    @Scheduled(fixedRate = 3000000)
+    @Scheduled(fixedRate = 300000)
     @Transactional
     public void markPastSchedulesAsCompleted() {
         LocalDateTime now = LocalDateTime.now();

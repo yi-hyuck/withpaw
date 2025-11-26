@@ -15,7 +15,7 @@ import com.mysite.test.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RestControllerAdvice(basePackages = "com.spring")
+@RestControllerAdvice(basePackages = "com.mysite.test")
 public class GlobalExceptionHandler {
 
     // DTO 검증 실패 (예: @NotNull, @NotBlank 위반)

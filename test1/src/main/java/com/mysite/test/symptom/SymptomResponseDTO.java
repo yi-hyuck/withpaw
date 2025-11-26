@@ -8,7 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SymptomResponseDTO {
-; 
 	
 	private Long id; // 증상 기록 ID
 	private Long memberId; // 회원 ID

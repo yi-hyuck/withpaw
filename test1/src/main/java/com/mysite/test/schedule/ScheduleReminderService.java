@@ -40,7 +40,7 @@ public class ScheduleReminderService {
 			LocalDateTime targetTime = instance.getOccurrenceTime().minusMinutes(remindBefore);
 
 			// targetTime이 현재 시간 기준으로 1분 내인 경우
-            if (targetTime.isAfter(now) || targetTime.isBefore(now.minusMinutes(1))) continue;
+            if (targetTime.isBefore(now) || targetTime.isBefore(now.plusMinutes(1))) continue;
 
             
             if (reminderLogRepository.existsByScheduleInstanceIdAndReminderTimeBetween(

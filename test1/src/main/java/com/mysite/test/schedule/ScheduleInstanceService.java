@@ -118,20 +118,16 @@ public class ScheduleInstanceService {
 		            current = current.plusMonths(interval);
 		        }
 		    }
-		    // case 2: nthWeek + dayOfWeek(s) (예: 매달 첫째주 월요일, 수요일)
+		    // case 2: nthWeek + daysOfWeek (예: 매달 첫째주 월요일, 수요일)
 		    else if (rule.getNthWeek() != null) {
-		        // 단일 dayOfWeek(옵션) + 리스트 daysOfWeek(옵션) 둘 다 고려
-		        List<DayOfWeek> days = new ArrayList<>();
-		        if (rule.getDaysOfWeek() != null && !rule.getDaysOfWeek().isEmpty()) {
-		            days.addAll(rule.getDaysOfWeek());
-		        }
-		        if (rule.getDaysOfWeek() != null && !days.contains(rule.getDaysOfWeek())) {
-		            days.addAll(rule.getDaysOfWeek());
-		        }
 
-		        // 아무 요일도 지정 안 됐다면 안전하게 종료
+		        // daysOfWeek 리스트만 사용 (null이면 빈 리스트)
+		        List<DayOfWeek> days = 
+		                (rule.getDaysOfWeek() != null) ? rule.getDaysOfWeek() : List.of();
+
+		        // 아무 요일도 지정 안 됐으면 예외
 		        if (days.isEmpty()) {
-		            throw new BadRequestException("MONTHLY(Nth) 반복은 dayOfWeek 혹은 daysOfWeek가 필요합니다.");
+		            throw new BadRequestException("MONTHLY(Nth) 반복은 daysOfWeek가 필요합니다.");
 		        }
 
 		        // 월 반복 루프
@@ -143,22 +139,29 @@ public class ScheduleInstanceService {
 		                if (count >= maxCount) break;
 
 		                LocalDate target = firstOfMonth.with(
-		                        TemporalAdjusters.dayOfWeekInMonth(rule.getNthWeek(), day));
+		                        TemporalAdjusters.dayOfWeekInMonth(rule.getNthWeek(), day)
+		                );
 
-		                // target이 해당 달에 존재하고(일부 조합은 존재하지 않을 수 있음), 범위 내일 때만 추가
+		                // target이 해당 달에 존재하고, 범위 내일 때만 추가
 		                if (target.getMonth().equals(firstOfMonth.getMonth())
 		                        && !target.isBefore(schedule.getStartDate())
 		                        && !target.isAfter(end)) {
-		                    occurrences.add(LocalDateTime.of(target, schedule.getScheduleTime().toLocalTime()));
+
+		                    occurrences.add(LocalDateTime.of(
+		                            target,
+		                            schedule.getScheduleTime().toLocalTime()
+		                    ));
 		                    count++;
 		                }
 		            }
 
 		            current = current.plusMonths(interval);
 		        }
-		    }
+		    } 
 		    else {
-		        throw new BadRequestException("MONTHLY 반복은 dayOfMonth 또는 (nthWeek + dayOfWeek[s])가 필요합니다.");
+		        throw new BadRequestException(
+		                "MONTHLY 반복은 dayOfMonth 또는 (nthWeek + daysOfWeek)가 필요합니다."
+		        );
 		    }
 		}
 
