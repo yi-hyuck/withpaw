@@ -42,7 +42,7 @@ function TabNaviBar() {
   return(
     //아래 네비게이션 바
     <Tab.Navigator
-      initialRouteName="Maps"
+      initialRouteName="Foods"
       screenOptions={{
         tabBarStyle:{
           backgroundColor: '#ffd651ff',
@@ -58,31 +58,6 @@ function TabNaviBar() {
         },
         
       }}>
-      <Tab.Screen             //위 네비게이션 바
-          name="Maps"
-          component={Maps}
-          options={{
-            title:"지도",
-            headerStyle:{
-              height:55,
-              backgroundColor:'#ffd651ff',
-            },
-            headerTitleStyle:{
-              fontSize:20,
-              textAlignVertical: 'center',
-              fontWeight:'bold',
-              color:'#000000ff',
-              paddingLeft:5,
-            },
-            headerRight: ()=> <DrawerButton/>,
-            tabBarIcon:({color, size, focused}) => (
-              <MaterialCommunityIcons 
-                name={focused ? 'map-marker-radius' : 'map-marker-radius-outline'}
-                color={color}
-                size={size}/>
-            ),
-          }}>
-      </Tab.Screen>
       <Tab.Screen
           name="Foods"
           component={FoodsScreen}
@@ -128,6 +103,31 @@ function TabNaviBar() {
             tabBarIcon:({color, size, focused}) => (
               <MaterialCommunityIcons 
                 name={focused ? 'hospital-box':'hospital-box-outline'}
+                color={color}
+                size={size}/>
+            ),
+          }}>
+      </Tab.Screen>
+      <Tab.Screen             //위 네비게이션 바
+          name="Maps"
+          component={Maps}
+          options={{
+            title:"지도",
+            headerStyle:{
+              height:55,
+              backgroundColor:'#ffd651ff',
+            },
+            headerTitleStyle:{
+              fontSize:20,
+              textAlignVertical: 'center',
+              fontWeight:'bold',
+              color:'#000000ff',
+              paddingLeft:5,
+            },
+            headerRight: ()=> <DrawerButton/>,
+            tabBarIcon:({color, size, focused}) => (
+              <MaterialCommunityIcons 
+                name={focused ? 'map-marker-radius' : 'map-marker-radius-outline'}
                 color={color}
                 size={size}/>
             ),
