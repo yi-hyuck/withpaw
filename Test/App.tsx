@@ -14,6 +14,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
+import { MemberProvider, useMember } from './MemberProvider';
 //import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Login from './Login';
@@ -31,17 +32,35 @@ type Props = {
   navigation: HomeScreenNavigationProp;
 };
 
+function NaviContainer(){
+  const {memberInfo} = useMember();
+
+  // if(isLoading) {
+  //   return (
+  //     <View style={{flex:1, justifyContent: 'center', alignItems: 'center'}}>
+  //       <Text>회원 정보 로딩중</Text>
+  //     </View>
+  //   )
+  // }
+
+  return (
+    <Stack.Navigator initialRouteName={memberInfo ? 'NaviBar' : 'Home'}>
+      <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}}/>
+      <Stack.Screen name="Login" component={Login}/>
+      <Stack.Screen name="SignUp" component={SignUp_Screen} options={{headerShown: false}}/>
+      <Stack.Screen name="NaviBar" component={NaviBar} options={{headerShown: false}}/>
+    </Stack.Navigator>
+  )
+}
+
 function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}}/>
-          <Stack.Screen name="Login" component={Login}/>
-          <Stack.Screen name="SignUp" component={SignUp_Screen} options={{headerShown: false}}/>
-          <Stack.Screen name="NaviBar" component={NaviBar} options={{headerShown: false}}/>
-        </Stack.Navigator>
-      </NavigationContainer>
+      <MemberProvider>
+        <NavigationContainer>
+          <NaviContainer/>
+        </NavigationContainer>
+      </MemberProvider>
     </SafeAreaProvider>
   );
 }

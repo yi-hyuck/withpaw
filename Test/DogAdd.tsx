@@ -7,6 +7,10 @@ import { useNavigation, RouteProp } from "@react-navigation/native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from './types';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const API_URL = 'http://10.0.2.2:8090/pet'
 
 const Stack = createNativeStackNavigator();
 
@@ -36,7 +40,7 @@ const formatDate = (date:Date, f:string) => {
 }
 
 function DogAdd(){
-
+    const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation<DogAddScreenNavigationProp>();
 
     //폼 관리
@@ -47,7 +51,7 @@ function DogAdd(){
         dogBirth: '',
         dogBreed: '',
         dogWeight: '',
-        neutering: '',
+        neuter: 0,
       }
     });
 
@@ -63,8 +67,39 @@ function DogAdd(){
     const [selectNeutering, setSelectNeutering] = useState('');
     
     //강아지 데이터 전달
-    const onSubmit = (data:any)=>{
-      navigation.navigate('DogManagement', {newDog: data});
+    const onSubmit = async (data:any)=>{
+      if(isLoading) return;
+
+      setIsLoading(true);
+
+      const petData = {
+        name: data.dogName,
+        breed: data.dogBreed,
+        gender: data.dogGender,
+        birthDate: data.dogBirth,
+        neuter: data.neuter,
+        weight: parseFloat(data.dogWeight)
+      }
+
+      try{
+        const token = await AsyncStorage.getItem('userToken');
+
+        if(!token){
+            console.error("토큰 없음");
+            return null;
+        }
+
+        const response = await axios.post(`${API_URL}/create`, petData, {
+          headers: {
+            'Authorization' : `Bearer ${token}`,
+            'Content-Type' : 'application/json'
+          }
+        });
+      }catch (error:any){
+        console.error("에러발생", error.message);
+      }
+
+      navigation.goBack();
     }
 
     //성별 설정
@@ -87,8 +122,9 @@ function DogAdd(){
 
     //중성화 설정
     const handleNeuteringSelect = (value: string) => {
+      const numericValue = Number(value);
       setSelectNeutering(value);
-      setValue('neutering', value, {shouldValidate: true});
+      setValue('neuter', numericValue, {shouldValidate: true});
     }
     
     const renderNeuteringButton = (label:string, value: string) => (
@@ -96,7 +132,7 @@ function DogAdd(){
         key={value}
         style={[styles.button2, selectNeutering===value&&styles.selectButton]}
         onPress={()=>handleNeuteringSelect(value)}>
-          <Text style={[styles.buttonText2, selectGender===value&&styles.selectButtonText]}>
+          <Text style={[styles.buttonText2, selectNeutering===value&&styles.selectButtonText]}>
             {label}
           </Text>
       </TouchableOpacity>
@@ -115,7 +151,7 @@ function DogAdd(){
 
     //날짜 확정
     const handleConfirm = (date:Date)=> {
-      const formattedDate = formatDate(date, 'yyyy/MM/dd');
+      const formattedDate = formatDate(date, 'yyyy-MM-dd');
       setValue('dogBirth', formattedDate, {shouldValidate:true});
       setVisible(false);
     }
@@ -153,8 +189,8 @@ function DogAdd(){
             render={()=>(
               <View>
                 <View style={styles.buttonGroup}>
-                  {renderButton('남', 'male')}
-                  {renderButton('여', 'female')}
+                  {renderButton('남', 'M')}
+                  {renderButton('여', 'F')}
                 </View>
                 {errors?.dogGender?.message && <Text style={styles.error}>{String(errors.dogGender.message)}</Text>}
               </View>
@@ -165,15 +201,15 @@ function DogAdd(){
         <View style={styles.container}>
           <Controller
             control={control}
-            name="neutering"
+            name="neuter"
             rules={{required: '중성화 여부를 선택해주세요.'}}
             render={()=>(
               <View>
                 <View style={styles.buttonGroup}>
-                  {renderNeuteringButton('O', 'yes')}
-                  {renderNeuteringButton('X', 'no')}
+                  {renderNeuteringButton('O', '1')}
+                  {renderNeuteringButton('X', '0')}
                 </View>
-                {errors?.neutering?.message && <Text style={styles.error}>{String(errors.neutering.message)}</Text>}
+                {errors?.neuter?.message && <Text style={styles.error}>{String(errors.neuter.message)}</Text>}
               </View>
             )}
           />
@@ -267,7 +303,7 @@ function DogAdd(){
             {backgroundColor:'#ffbb00ff'}]}
             onPress={handleSubmit(onSubmit)}
           >
-            <Text style={styles.buttonText}>추가</Text>
+            <Text style={styles.buttonText}>회원가입</Text>
           </Pressable>
         </View>
       </KeyboardAwareScrollView>

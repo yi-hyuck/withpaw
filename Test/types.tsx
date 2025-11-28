@@ -5,7 +5,7 @@ interface Note {
 }
 
 interface Schedule {
-  id: string;
+  id: number;
   //일정 이름
   name: string;
   //시작일
@@ -30,7 +30,7 @@ export type NewDogData = {
 };
 
 interface userType {
-    id: string;
+    loginId: string;
     email: string;
     password: string;
 }
@@ -73,10 +73,10 @@ export type RootStackParamList={
   UserInfo: undefined;
   UserInfoScreen: undefined;
   DogMgmtScreen: undefined;
-  DogManagement: {newDog?: NewDogData; updatedDog?: UpdatedDogData} | undefined;
+  DogManagement: {newDog?: any; updatedDog?: any, refresh?: boolean} | undefined;
   DogAdd: undefined;
-  DogEdit: {dogId: string};
+  DogEdit: {petId: number};
   Logout: undefined;
   App: undefined;
-  UserEdit: {currentData: userType; onSave:(updatedData: userType)=>void};
+  UserEdit: {currentData: {loginId: string; email:string; password:string;}|null; onSave:()=>void};
 };

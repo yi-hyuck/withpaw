@@ -26,9 +26,9 @@ public class Member {
     @Column(nullable = false)
     private String password; 
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MemberRole role; 
+//    @Enumerated(EnumType.STRING)
+//    @Column(nullable = false)
+//    private MemberRole role; 
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Pet> pets; 

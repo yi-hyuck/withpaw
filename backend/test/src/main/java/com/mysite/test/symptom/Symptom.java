@@ -1,6 +1,7 @@
 package com.mysite.test.symptom;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.mysite.test.pet.Pet;
 
@@ -12,25 +13,34 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@Table(name = "symptom")
 public class Symptom {
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer symptomId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pet_id", nullable = false)
-    private Pet pet; 
-
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String symptom;
-
-    @Column(nullable = false)
-    private LocalDate symptomdate;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id; // 증상기록 ID
+	@NotNull
+	private Long memberId; // 회원id
+	@Column(nullable=false, length=200)
+	private String title;
+	private LocalDateTime symptomDate; // 증상 기록 날짜
+	@Column(length = 2000, columnDefinition = "TEXT")
+	private String description; // 기록(텍스트)
+	private LocalDateTime createdAt; // 작성시점..
+	
+    @PrePersist
+    void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
 
 }

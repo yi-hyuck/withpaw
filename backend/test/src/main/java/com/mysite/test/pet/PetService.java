@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mysite.test.DataNotFoundException;
 import com.mysite.test.member.Member;
+import com.mysite.test.member.MemberResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,11 +32,11 @@ public class PetService {
         return breedRepository.save(newBreed);
     }
     
-    public void create(Member owner, String name, String species, String gender, 
-                       LocalDate birthDate, Boolean neuter, Double weight) {
+    public void create(Member owner, String name, String breed, String gender, 
+                       LocalDate birthDate, Integer neuter, Double weight) {
                        
-        Breed breedEntity = findOrCreateBreed(species);
-        
+        Breed breedEntity = findOrCreateBreed(breed);
+        Boolean isNeuter = neuter != null && neuter == 1;
       
         Pet pet = new Pet();
         pet.setOwner(owner);
@@ -43,12 +44,12 @@ public class PetService {
         pet.setPetname(name);
         pet.setGender(gender);
         pet.setBirthdate(birthDate);
-        pet.setNeuter(neuter);
+        pet.setNeuter(isNeuter);
         pet.setWeight(weight);
         this.petRepository.save(pet);
     }
     
-    // Member 객체를 이용해 반려동물 목록을 조회하는 메서드(챗봇)
+ // Member 객체를 이용해 반려동물 목록을 조회하는 메서드(챗봇)
     public List<Pet> getPetsByMember(Member owner) {
         return petRepository.findByOwner(owner);
     }
@@ -69,15 +70,55 @@ public class PetService {
     
     // 수정 기능
     @Transactional
-    public void update(Pet pet, String name, LocalDate birthDate, Boolean neuter, Double weight) {
-                       
+    public void updatePetInfo(Pet pet, PetUpdateForm petUpdateForm) {
+    	if(petUpdateForm.getPetname() != null && !pet.getPetname().equals(petUpdateForm.getPetname())) {
+    		pet.setPetname(petUpdateForm.getPetname());
+        }
         
-        // 정보 업데이트
-        pet.setPetname(name);
-        pet.setBirthdate(birthDate);
-        pet.setNeuter(neuter);
-        pet.setWeight(weight);
+        if(petUpdateForm.getBirthDate() != null && !pet.getBirthdate().isEqual(petUpdateForm.getBirthDate())) {
+        	pet.setBirthdate(petUpdateForm.getBirthDate());
+        }
+        
+        if(petUpdateForm.getNeuter() != null && pet.getNeuter() != petUpdateForm.getNeuter()) {
+        	pet.setNeuter(petUpdateForm.getNeuter());
+        }
+        
+        if(petUpdateForm.getWeight() != null && pet.getWeight() != petUpdateForm.getWeight()) {
+        	pet.setWeight(petUpdateForm.getWeight());
+        }
     }
+//    public void updateName(Pet pet, String newName) {
+//    	pet.setPetname(newName);
+//    }
+//    
+//    @Transactional
+//    public void updateBirth(Pet pet, LocalDate birthDate) {
+//    	pet.setBirthdate(birthDate);
+//    }
+//    
+//    @Transactional
+//    public void updateNeuter(Pet pet, Boolean neuter ) {
+//    	pet.setNeuter(neuter);
+//    }
+//    
+//    @Transactional
+//    public void updateWeight(Pet pet, Double weight ) {
+//    	pet.setWeight(weight);
+//    }
+//    public void update(Pet pet, PetUpdateForm petUpdateForm) {
+//    	String name = petUpdateForm.getPetname();
+//    	LocalDate birthDate = petUpdateForm.getBirthDate();
+//    	Integer neuter = petUpdateForm.getNeuter();
+//    	Double weight = petUpdateForm.getWeight();
+//    	
+//        Boolean isNeuter = neuter != null && neuter == 1;
+//        
+//        // 정보 업데이트
+//        pet.setPetname(name);
+//        pet.setBirthdate(birthDate);
+//        pet.setNeuter(isNeuter);
+//        pet.setWeight(weight);
+//    }
     
 
     // 삭제 기능
@@ -85,7 +126,17 @@ public class PetService {
         this.petRepository.delete(pet);
     }
     
-    
-    
-
+    public MemberResponseDto.PetDto getPetDetail(Integer petId){
+    	Pet pet = this.getPet(petId);
+    	
+    	return MemberResponseDto.PetDto.builder()
+    			.petId(pet.getPetId())
+    			.name(pet.getPetname())
+    			.breed(pet.getBreed().getBreedname())
+    			.gender(pet.getGender())
+    			.birthDate(pet.getBirthdate())
+    			.neuter(pet.getNeuter())
+    			.weight(pet.getWeight())
+    			.build();
+    }
 }

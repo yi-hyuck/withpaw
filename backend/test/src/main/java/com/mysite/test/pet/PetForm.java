@@ -28,7 +28,7 @@ public class PetForm {
     private LocalDate birthDate;
 
     @NotNull(message = "중성화 여부는 필수 항목입니다.")
-    private Boolean neuter; 
+    private Integer neuter; 
 
     @NotNull(message = "몸무게는 필수 항목입니다.")
     @DecimalMin(value = "0.1", message = "몸무게는 0.1 kg 이상이어야 합니다.")

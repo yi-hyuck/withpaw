@@ -6,12 +6,18 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useNavigation, RouteProp } from "@react-navigation/native";
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
+import axios from "axios";
 
 import { RootStackParamList } from "./types";
 import { MarkedDates } from "react-native-calendars/src/types";
 
+const API_URL = "http://10.0.2.2:8090/api/schedules";
+//임시 id
+const MEMBER_ID = 1;
+
 //드로어바 관련
 const Drawer = createDrawerNavigator();
+
 
 type NavigationProps = DrawerNavigationProp<RootStackParamList>;
 
@@ -31,13 +37,35 @@ const DrawerButton = () => {
 
 //타입 정의
 interface Schedule {
-  id: string;
+  id: number;
   name: string;
   startDate: string;
   endDate: string;
   repeats: boolean;    //반복 여부
   repeatWeeks: number; //몇 주마다 반복?
-  originalId: string;
+  originalId: number;
+  time: string;
+}
+
+const DEFAULT_TIME = 'T10:00:00';
+
+interface scheduleResponseDTO{
+  id: number;
+  memberId: number;
+  title: string;
+  time: string;
+  recurring: boolean;
+  interval: number | null;
+  startDate: string;
+  endDate: string;
+  remindBeforeMinutes: number|null;
+}
+
+interface scheduleInstanceResponseDTO{
+  id:number;
+  occurrenceTime: string;
+  completed: boolean;
+  scheduleTitle: string;
 }
 
 //UTC 설정
@@ -72,56 +100,60 @@ LocaleConfig.locales.kr={
 LocaleConfig.defaultLocale = 'kr';
 
 
-//백엔드로 바꿔야 됨(백엔드 없어서 시뮬레이션 하려고 만듦) -------------------------
-interface MockApiState {
-    schedules: Schedule[];
-    setSchedules: React.Dispatch<React.SetStateAction<Schedule[]>>;
+//api
+//추가
+const createSchedule = async (schedule: any) => {
+  const requestBody = {
+    memberId: MEMBER_ID,
+    id: schedule.id,
+    title: schedule.name,
+    time: schedule.time,
+    recurring: schedule.repeats,
+    interval: schedule.repeatWeeks,
+    startDate: schedule.startDate,
+    endDate: schedule.endDate,
+    remindBeforeMinutes: 5,
+  };
+
+  const response = await axios.post(API_URL, requestBody);
+  return response.data.data;
 }
 
-const getMockApi = (state: MockApiState) => {
-    const { schedules, setSchedules } = state;
+//조회
+const fetchSchedules = async (): Promise<Schedule[]> => {
+  const scheduleResponse = await axios.get(`${API_URL}/member/${MEMBER_ID}`);
+  const originalSchedules: scheduleResponseDTO[] = scheduleResponse.data.data;
 
-    //초기 데이터
-    const initialDummyData: Schedule[] = [];
+  let allInstances: Schedule[] = [];
 
-    return {
-        //GET: 일정 목록 조회
-        fetchSchedules: async (): Promise<Schedule[]> => {
-            await new Promise<void>((resolve) => setTimeout(resolve, 500));
-            return schedules.length > 0 ? schedules : initialDummyData;
-        },
+  for (const s of originalSchedules) {
+    try{
+      const instanceResponse = await axios.get(`${API_URL}/${s.id}/instances`);
+      const instances: scheduleInstanceResponseDTO[] = instanceResponse.data.data;
 
-        //POST: 일정 추가
-        addSchedule: async (newSchedules: Schedule[]): Promise<void> => {
-            await new Promise<void>((resolve) => setTimeout(resolve, 500));
-            
-            //상태 업데이트 (실제 백엔드 저장 후 재조회)
-            setSchedules(prev => {
-                const updated = [...prev, ...newSchedules];
-                updated.sort((a, b) => new Date(a.startDate) as any - (new Date(b.startDate) as any));
-                return updated;
-            });
-        },
+      const instanceSchedules: Schedule[] = instances.map((i:scheduleInstanceResponseDTO) => ({
+        id: i.id,
+        name: i.scheduleTitle,
+        startDate: i.occurrenceTime.substring(0,10),
+        endDate: i.occurrenceTime.substring(0,10),
+        repeats: false,
+        repeatWeeks: 0,
+        originalId: s.id,
+        time: i.occurrenceTime.substring(11, 16),
+      }));
 
-        //DELETE: 일정 삭제
-        deleteSchedule: async (idToDelete: string): Promise<void> => {
-            await new Promise(resolve => setTimeout(() => resolve, 300));
+      allInstances = allInstances.concat(instanceSchedules);
+    } catch(e:any){
+      console.error(`인스턴스 조회실패 for ID ${s.id}`, e.message);
+    }
+  }
+  return allInstances;
+}
 
-            //상태 업데이트
-            setSchedules(prevSchedules => {
-                const scheduleToDelete = prevSchedules.find(s => s.id === idToDelete);
-                if (!scheduleToDelete) return prevSchedules;
-
-                let updatedSchedules = prevSchedules.filter(s => s.id !== idToDelete);
-                if (scheduleToDelete.originalId === idToDelete) {
-                    updatedSchedules = updatedSchedules.filter(s => s.originalId !== idToDelete);
-                }
-                return updatedSchedules;
-            });
-        }
-    };
-};
-//백엔드 연결할 때 위 코드 바꾸기 (시뮬 코드임)-----------------
+//삭제
+const deleteScheduleApi = async (scheduleId: number) => {
+  await axios.delete(`${API_URL}/${scheduleId}`)
+}
 
 
 //캘린더 스텍 화면
@@ -147,13 +179,13 @@ const HEADER_STYLE = {
 function CalendarMainScreen() { //스텍 화면
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const mockApi = getMockApi({schedules, setSchedules});
+  // const mockApi = getMockApi({schedules, setSchedules});
 
   //초기 데이터 불러오기
   useEffect(() => {
     const loadSchedules = async () => {
         try {
-            const data = await mockApi.fetchSchedules(); 
+            const data = await fetchSchedules(); 
             setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
         } catch (e) {
             console.error("Fetch Error:", e);
@@ -164,9 +196,13 @@ function CalendarMainScreen() { //스텍 화면
 
   //일정 추가
   const handleScheduleAdd = async (newSchedules: Schedule[]) => {
+    if(newSchedules.length === 0) return;
+
     setIsSaving(true);
     try {
-        await mockApi.addSchedule(newSchedules);
+        await createSchedule(newSchedules[0]);
+        const updatedList = await fetchSchedules(); 
+        setSchedules(updatedList.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
     } catch (e) {
         Alert.alert('오류', '일정 추가 중 오류가 발생했습니다.');
         throw e;
@@ -175,9 +211,10 @@ function CalendarMainScreen() { //스텍 화면
     }
   };
 
-  const deleteSchedule = async (idToDelete: string) => {
+  const handleDeleteSchedule = async (idToDelete: number) => {
     try {
-        await mockApi.deleteSchedule(idToDelete);
+        await deleteScheduleApi(idToDelete);
+        setSchedules(prev => prev.filter(s => s.originalId !== idToDelete));
     } catch (e) {
         Alert.alert('오류', '일정 삭제 중 오류가 발생했습니다.');
         throw e;
@@ -193,7 +230,7 @@ function CalendarMainScreen() { //스텍 화면
             navigation={navigation}
             route={route}
             schedules={schedules}
-            deleteSchedule={deleteSchedule}
+            deleteSchedule={handleDeleteSchedule}
           />
         )}
         options={({route})=>({
@@ -231,7 +268,7 @@ function CalendarMainScreen() { //스텍 화면
 //일정 보기--------------------------------------
 interface ScheduleItemProps {
   schedule: Schedule;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => Promise<void>;
   isDeleting: boolean;
 }
 
@@ -242,7 +279,7 @@ function ScheduleItem({schedule, onDelete, isDeleting} : ScheduleItemProps){
     if(deleting || isDeleting) return;
     setDeleting(true);
     try{
-      await onDelete(schedule.id);
+      await onDelete(schedule.originalId);
     }catch (e){
       Alert.alert("오류", "일정 삭제에 실패했습니다.");
     } finally {
@@ -295,11 +332,13 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [visible, setVisible] = useState(false); //날짜 선택
+  const [timeVisible ,setTimeVisible] = useState(false); //시간 선택
   const [currentPickingDate, setCurrentPickingDate] = useState<DateType>(null); //start end 구분
   const [repeats, setRepeats] = useState(false); //반복 여부
   const [repeatWeeks, setRepeatWeeks] = useState<number>(0);
   const [message, setMessage] = useState('');
   const [isSubmitting, setisSubmitting] = useState<boolean>(false);
+  const [selectTime, setSelectTime] = useState<string>(DEFAULT_TIME);
 
   //날짜 선택
   const onPressDate = (type: DateType) => {
@@ -326,12 +365,40 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
     onCancel();
   };
 
+  //시간 선택 / 취소
+  const onPressTime = () => {
+    setTimeVisible(true);
+  }
+  
+  const onTimeCancle = () => {
+    setTimeVisible(false);
+  }
+
+  //선택 완료
+  const handleTimeConfirm = (date:Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    setSelectTime(`${hours}:${minutes}`);
+
+    onTimeCancle();
+  }
+
   //초기 date값
   const initialDate = () => {
     if (currentPickingDate === 'start' && startDate) return new Date(startDate);
     if (currentPickingDate === 'end' && endDate) return new Date(endDate);
     return new Date();
   };
+
+  //초기 time값
+  const initialTime = () => {
+    const [hours, minutes] = selectTime.split(":").map(Number);
+    const date = new Date();
+
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    return date;
+  }
 
   //최소 날짜
   const minimumDate = () => {
@@ -381,7 +448,7 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
 
     try {
       const schedulesToSave: Schedule[] = [];
-      const originalId = String(Date.now());
+      const originalId = Number(Date.now());
       const repeatWeeksInt = weekChk();
       const durationDays = 0;
       // const durationDays = getDateDifferenceInDays(startDate, endDate);
@@ -396,39 +463,46 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
           endDate: startDate,
           repeats, 
           repeatWeeks: repeatWeeksInt, 
-          originalId: originalId 
+          originalId: originalId,
+          time: selectTime,
       };
-      schedulesToSave.push(baseSchedule);
+      // schedulesToSave.push(baseSchedule);
 
-      if (repeats && repeatWeeksInt > 0) {
-          const repeatIntervalDays = repeatWeeksInt * 7;
-          const maxDate = parseDate(endDate);
+      await handleScheduleAddition([baseSchedule]);
 
-          let currentStart = parseDate(baseSchedule.startDate);
-          currentStart.setUTCDate(currentStart.getUTCDate() + repeatIntervalDays); 
+      setMessage('일정이 성공적으로 추가되었습니다.');
+      setTimeout(onGoBack, 1000);
 
-          while (currentStart.getTime() <= maxDate.getTime()) {
-              const newEnd = new Date(currentStart);
-              newEnd.setUTCDate(currentStart.getUTCDate() + durationDays);
+      // if (repeats && repeatWeeksInt > 0) {
+      //     const repeatIntervalDays = repeatWeeksInt * 7;
+      //     const maxDate = parseDate(endDate);
 
-              const occurrence: Schedule = {
-                  id: `${originalId}-${schedulesToSave.length}`,
-                  name: baseSchedule.name,
-                  startDate: formatDate(currentStart),
-                  endDate: formatDate(newEnd),
-                  repeats: false,
-                  repeatWeeks: 0,
-                  originalId: originalId,
-              };
-              schedulesToSave.push(occurrence);
-              const nextStart = new Date(currentStart);
-              nextStart.setUTCDate(nextStart.getUTCDate() + repeatIntervalDays);
-              currentStart = nextStart;
-              }
-            }
-            await handleScheduleAddition(schedulesToSave);
-            setMessage('일정이 성공적으로 추가되었습니다.');
-            setTimeout(onGoBack, 1000);
+      //     let currentStart = parseDate(baseSchedule.startDate);
+      //     currentStart.setUTCDate(currentStart.getUTCDate() + repeatIntervalDays); 
+
+      //     while (currentStart.getTime() <= maxDate.getTime()) {
+      //         const newEnd = new Date(currentStart);
+      //         newEnd.setUTCDate(currentStart.getUTCDate() + durationDays);
+
+      //         const occurrence: Schedule = {
+      //             id: `${originalId}-${schedulesToSave.length}`,
+      //             name: baseSchedule.name,
+      //             startDate: formatDate(currentStart),
+      //             endDate: formatDate(newEnd),
+      //             repeats: false,
+      //             repeatWeeks: 0,
+      //             originalId: originalId,
+      //             time: baseSchedule.time,
+      //         };
+      //         schedulesToSave.push(occurrence);
+      //         const nextStart = new Date(currentStart);
+      //         nextStart.setUTCDate(nextStart.getUTCDate() + repeatIntervalDays);
+      //         currentStart = nextStart;
+      //         }
+      //       }
+      //       await handleScheduleAddition(schedulesToSave);
+      //       setMessage('일정이 성공적으로 추가되었습니다.');
+      //       setTimeout(onGoBack, 1000);
 
     } catch (e) {
         setMessage('일정 추가 중 오류가 발생했습니다.');
@@ -475,6 +549,19 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
             </TouchableOpacity>
           </View>
         </View>
+        <Text style={[styles.addTitle, {marginTop: 10}]}>시간</Text>
+        <View style={styles.timeInputContainer}>
+          <TouchableOpacity onPress={onPressTime} activeOpacity={1}>
+            <TextInput
+              style={styles.addInput}
+              placeholder="시간 선택"
+              value={selectTime} // <-- selectedTime 상태 표시
+              editable={false}
+              placeholderTextColor={'#000000ff'}
+              underlineColorAndroid="transparent"
+            />
+          </TouchableOpacity>
+        </View>
         <DateTimePickerModal
           isVisible={visible} 
           mode="date"
@@ -482,6 +569,14 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
           minimumDate={minimumDate()}
           onConfirm={handleDateConfirm}
           onCancel={onCancel}
+          locale="ko_KR"
+        />
+        <DateTimePickerModal
+          isVisible={timeVisible}
+          mode="time"
+          date={initialTime()}
+          onConfirm={handleTimeConfirm}
+          onCancel={onTimeCancle}
           locale="ko_KR"
         />
 
@@ -535,7 +630,7 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
 //캘린더 메인 화면
 interface CalendarScreenProps extends NativeStackScreenProps<RootStackParamList, 'CalendarScreen'>{
   schedules: Schedule[];
-  deleteSchedule: (id: string) => Promise<void>;
+  deleteSchedule: (id: number) => Promise<void>;
 }
 
 function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenProps){
@@ -550,7 +645,7 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
   const [error, setError] = useState<string | null>(null);
 
   //일정 삭제
-  const handleDeleteSchedule = async (idToDelete: string) => {
+  const handleDeleteSchedule = async (idToDelete: number) => {
     setIsDeleting(true);
     setError(null);
     try{
@@ -821,6 +916,13 @@ const styles = StyleSheet.create({
     padding: 5,
     backgroundColor: '#ffffff',
     marginRight: 5,
+  },
+  timeInputContainer: {
+    width: '90%', 
+    borderBottomWidth: 1,
+    borderColor:'#cfcfcfff',
+    marginLeft: 15,
+    marginBottom: 20,
   },
 
   

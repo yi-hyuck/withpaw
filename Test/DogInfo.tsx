@@ -78,10 +78,10 @@ function DogInfo(){
 
       const petInfo = {
         name: data.dogName,
-        species: data.dogBreed,
+        breed: data.dogBreed,
         gender: data.dogGender,
         birthDate: data.dogBirth,
-        neuter: data.neutering === 'yes',
+        neuter: data.neutering,
         weight: parseFloat(data.dogWeight)
       }
 
@@ -147,7 +147,7 @@ function DogInfo(){
         key={value}
         style={[styles.button2, selectNeutering===value&&styles.selectButton]}
         onPress={()=>handleNeuteringSelect(value)}>
-          <Text style={[styles.buttonText2, selectGender===value&&styles.selectButtonText]}>
+          <Text style={[styles.buttonText2, selectNeutering===value&&styles.selectButtonText]}>
             {label}
           </Text>
       </TouchableOpacity>

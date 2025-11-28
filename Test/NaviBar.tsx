@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, Platform, TouchableOpacity,  } from 'react-native';
 import { createBottomTabNavigator, BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NavigationContainer, useNavigation, } from "@react-navigation/native";
 import { NativeStackNavigationProp, createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createDrawerNavigator, DrawerNavigationProp, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer'
-
+import { useMember } from "./MemberProvider";
 import { RootStackParamList } from "./types";
 
 import FoodsScreen from './Foods';
@@ -15,6 +15,7 @@ import Maps from './Maps';
 import UserInfoScreen from './UserInfo';
 import DogMgmtScreen from './DogManagement';
 import App from './App';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const Tab = createBottomTabNavigator();
@@ -109,29 +110,29 @@ function TabNaviBar() {
           }}>
       </Tab.Screen>
       <Tab.Screen             //위 네비게이션 바
-          name="Maps"
-          component={Maps}
-          options={{
-            title:"지도",
-            headerStyle:{
-              height:55,
-              backgroundColor:'#ffd651ff',
-            },
-            headerTitleStyle:{
-              fontSize:20,
-              textAlignVertical: 'center',
-              fontWeight:'bold',
-              color:'#000000ff',
-              paddingLeft:5,
-            },
-            headerRight: ()=> <DrawerButton/>,
-            tabBarIcon:({color, size, focused}) => (
-              <MaterialCommunityIcons 
-                name={focused ? 'map-marker-radius' : 'map-marker-radius-outline'}
-                color={color}
-                size={size}/>
-            ),
-          }}>
+        name="Maps"
+        component={Maps}
+        options={{
+          title:"지도",
+          headerStyle:{
+            height:55,
+            backgroundColor:'#ffd651ff',
+          },
+          headerTitleStyle:{
+            fontSize:20,
+            textAlignVertical: 'center',
+            fontWeight:'bold',
+            color:'#000000ff',
+            paddingLeft:5,
+          },
+          headerRight: ()=> <DrawerButton/>,
+          tabBarIcon:({color, size, focused}) => (
+            <MaterialCommunityIcons 
+              name={focused ? 'map-marker-radius' : 'map-marker-radius-outline'}
+              color={color}
+              size={size}/>
+          ),
+        }}>
       </Tab.Screen>
       <Tab.Screen
           name="Calender"
@@ -163,19 +164,30 @@ function TabNaviBar() {
 }
 
 function CustomDrawerContent(props:any){
+  const {setMemberInfo} = useMember();
+
   //로그아웃
   const handleLogout = async () => {
     try{
-        const response = await fetch('http://10.0.2.2:8090/member/logout', {
+      const token = await AsyncStorage.getItem('userToken');
+
+      const response = await fetch('http://10.0.2.2:8090/member/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization' : `Bearer ${token}`
         },
       });
 
-      if(response.ok || response.status === 200 || response.status === 302){
-        console.log("logout successful");
+      if(response.ok || response.status === 200 || response.status === 302 || response.status === 204){
+        setMemberInfo(null);
         
+        if(token){
+          await AsyncStorage.removeItem('userToken');
+        }
+
+        setMemberInfo(null);
+
         const naviBarStack = props.navigation.getParent();
         if(naviBarStack){
           const rootStack = naviBarStack.getParent();

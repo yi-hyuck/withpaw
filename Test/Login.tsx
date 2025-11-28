@@ -4,10 +4,14 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, } from 'react-nati
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { useNavigation } from "@react-navigation/native";
+import { useMember } from "./MemberProvider";
+import axios from "axios";
 
 import Maps from './Maps';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function Login() {
+  const {fetchMemberInfo} = useMember();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,24 +76,25 @@ function Login() {
     console.log("RN Sending Payload:", payload);
 
     try{
-      const response = await fetch('http://10.0.2.2:8090/member/login', {
-        method: 'POST',
+      const response = await axios.post('http://10.0.2.2:8090/member/login',
+      {
+        loginId: values.userid,
+        password: values.password,
+      },
+      {
         headers: {
-          'Content-Type': 'application/json',
+        'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          loginId: values.userid,
-          password: values.password,
-        }),
       });
 
-      const data = await response.json();
+      if(response.status == 200 && response.data.token){
+        const token = response.data.token;
 
-      if(response.ok){
+        await AsyncStorage.setItem('userToken', token);
+        await fetchMemberInfo();
         navigation.reset({index:0, routes:[{name:'NaviBar'}]});
-      } else {
-        const errorMessage = data.message || "아이디 또는 비밀번호가 올바르지 않습니다.";
-        setError(errorMessage);
+        
+        // navigation.navigate('NaviBar');
       }
     } catch (err) {
       setError("로그인 중 오류가 발생했습니다.")

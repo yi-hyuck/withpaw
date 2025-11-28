@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, Alert} from 'react-native';
 import { RootStackParamList } from './types';
 import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,20 +7,84 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useForm, Controller } from "react-hook-form";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { TextInput, } from "react-native-paper";
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_URL = 'http://10.0.2.2:8090';
 
-//임시데이터
-interface userType{
-    id: string;
+const fetchMemberInfoApi = async () => {
+    try{
+        const token = await AsyncStorage.getItem('userToken');
+
+        if(!token){
+            console.error("토큰 없음");
+            return null;
+        }
+
+        const response = await axios.get(`${API_URL}/member/info`, {
+            headers: {
+                'Authorization' : `Bearer ${token}`
+            }
+        });
+
+        return response.data;
+    } catch (error){
+        console.error("오류");
+        return null;
+    }
+}
+
+const editMemberInfoApi = async (payload: any) => {
+    try{
+        const token = await AsyncStorage.getItem('userToken');
+
+        if(!token){
+            console.error("토큰 없음");
+            return null;
+        }
+
+        const response = await axios.post(`${API_URL}/member/update`, payload, {
+            headers: {
+                'Authorization' : `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        return response.data;
+    } catch (error){
+        console.error("오류");
+        return null;
+    }
+}
+
+// 임시데이터
+// interface userType{
+//     id: string;
+//     email: string;
+//     password: string;
+// }
+
+interface PetDto{
+    petId: number;
+    name: string,
+    breed: string;
+    gender: string;
+    birthDate: string;
+    neuter: boolean;
+    weight: number;
+}
+
+interface userType {
+    loginId: string;
     email: string;
     password: string;
+    pets: PetDto[];
 }
 
-const userItem: userType = {
-    id: 'asdf1234',
-    email: 'asdf1234@email.com',
-    password: '1234',
-}
+// const userItem: userType = {
+//     id: 'asdf1234',
+//     email: 'asdf1234@email.com',
+//     password: '1234',
+// }
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 type userInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfo'>
@@ -68,35 +132,58 @@ function UserInfoScreen(){
 }
 
 
-function UserEdit({navigation, route}: userInfoScreenProps){
+function UserEdit({navigation, route}: userEditScreenProps){
     const {currentData, onSave} = route.params;
 
     const defaultFormValues = {
-        userid: currentData?.id,
+        userid: currentData?.loginId,
         email: currentData?.email,
         password: currentData?.password,
-        passwordChk: '',
+        newPasswordChk: '',
+        newPassword: '',
     };
 
     const {control, handleSubmit, formState: {errors}, setValue, watch} = useForm({
         defaultValues: defaultFormValues
     });
 
+    const newPasswordValue = watch('newPassword');
+
     const [seePw, setSeePw] = useState(false);
+    const [seePw2, setSeePw2] = useState(false);
     const [seePwChk, setSeePwChk] = useState(false);
 
+
+
     //폼 제출
-    const onSubmit = (data:any) => {
-        //api로 수정 (호출 -> 서버 저장)
-        const updatedData: userType={
-            id: data.userid,
+    const onSubmit = async (data:any) => {
+        const newPassword = data.newPassword.trim();
+        // const finalPassword = newPassword.length>0 ? newPassword : currentData.password;
+
+        const updateData = {
             email: data.email,
-            password: data.password,
+            currentPassword: data.password,
+            newPassword: data.newPassword.trim(),
+            newPasswordConfirm: data.new
         }
 
-        onSave(updatedData);
-        
-        navigation.goBack();
+        const result = await editMemberInfoApi(updateData);
+
+        if(result && result.error){
+            const errors = result.data;
+            if (errors.email) {
+                Alert.alert("수정 실패", `이메일 오류: ${errors.email}`);
+            } else if (errors.currentPassword) {
+                Alert.alert("수정 실패", `비밀번호 오류: ${errors.currentPassword}`);
+            } else if (errors.newPasswordConfirm) {
+                Alert.alert("수정 실패", `비밀번호 확인 오류: ${errors.newPasswordConfirm}`);
+            } else {
+                Alert.alert("수정 실패", errors.message || "회원 정보 수정 중 오류가 발생했습니다.");
+            }
+        } else if(result){
+            onSave();
+            navigation.goBack();
+        }
     }
 
 
@@ -113,11 +200,12 @@ function UserEdit({navigation, route}: userInfoScreenProps){
                         placeholder="아이디 입력"
                         mode="outlined"
                         outlineStyle={styles.inputOutline}
-                        style={styles.input}
+                        style={[styles.input2, {backgroundColor:'#e6e6e6ff'}]}
                         onBlur={onBlur}
                         value={value}
                         onChangeText={(value)=>onChange(value)}
                         autoCapitalize="none"
+                        editable={false}
                     />
                     {errors?.userid?.message && <Text style={styles.error}>{String(errors.userid.message)}</Text>}
                 </View>
@@ -136,32 +224,70 @@ function UserEdit({navigation, route}: userInfoScreenProps){
                         placeholder="비밀번호 입력"
                         mode="outlined"
                         outlineStyle={styles.inputOutline}
-                        style={styles.input}
+                        style={[styles.input2, {backgroundColor:'#e6e6e6ff'}]}
                         onBlur={onBlur}
                         value={value}
                         onChangeText={(value)=>onChange(value)}
                         autoCapitalize="none"
+                        editable={false}
                         secureTextEntry={!seePw}
                         right={
                         <TextInput.Icon icon={seePw ? "eye-off" : "eye"}
                                         onPress={()=> setSeePw(!seePw)}
                                         forceTextInputFocus={false}/>}
                     />
-                    {errors?.password?.message && <Text style={styles.error}>{String(errors.password.message)}</Text>}
                     </View>
                 )}
-                rules={{required: '비밀번호를 입력해주세요.'}}
                 />
             </View>
-            <Text style={[styles.title, {marginTop:20}]}>비밀번호 확인</Text>
+            <Text style={[styles.title, {marginTop:20}]}>새 비밀번호</Text>
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="passwordChk"
+                name="newPassword"
                 render={({field: {onChange, value, onBlur}}) => (
                     <View>
                     <TextInput
-                        placeholder="비밀번호 입력"
+                        placeholder="새 비밀번호 입력"
+                        mode="outlined"
+                        outlineStyle={styles.inputOutline}
+                        style={styles.input}
+                        onBlur={onBlur}
+                        value={value}
+                        onChangeText={(value)=>onChange(value)}
+                        autoCapitalize="none"
+                        secureTextEntry={!seePw2}
+                        right={
+                        <TextInput.Icon icon={seePw2 ? "eye-off" : "eye"}
+                                        onPress={()=> setSeePw2(!seePw2)}
+                                        forceTextInputFocus={false}/>}
+                    />
+                    {errors?.newPassword?.message && <Text style={styles.error}>{String(errors.newPassword.message)}</Text>}
+                    </View>
+                )}
+                rules={{
+                    validate: (value) => {
+                        if(!value || value.trim().length === 0){
+                            return true;
+                        }
+                        const pattern = /.{4,}/;
+                        if(!pattern.test(value)){
+                            return "비밀번호는 4자 이상이어야 합니다.";
+                        }
+                        return true;
+                    }
+                }}
+                />
+            </View>
+            <Text style={[styles.title, {marginTop:20}]}>새 비밀번호 확인</Text>
+            <View style={styles.container}>
+                <Controller
+                control={control}
+                name="newPasswordChk"
+                render={({field: {onChange, value, onBlur}}) => (
+                    <View>
+                    <TextInput
+                        placeholder="새 비밀번호 확인"
                         mode="outlined"
                         outlineStyle={styles.inputOutline}
                         style={styles.input}
@@ -175,10 +301,25 @@ function UserEdit({navigation, route}: userInfoScreenProps){
                                         onPress={()=> setSeePwChk(!seePwChk)}
                                         forceTextInputFocus={false}/>}
                     />
-                    {errors?.passwordChk?.message && <Text style={styles.error}>{String(errors.passwordChk.message)}</Text>}
+                    {errors?.newPasswordChk?.message && <Text style={styles.error}>{String(errors.newPasswordChk.message)}</Text>}
                     </View>
                 )}
-                rules={{required: '비밀번호를 확인해주세요.'}}
+                rules={{
+                    validate: (value) => {
+                        const newPw = (String(newPasswordValue || '')).trim();
+                        const chkPw = (String(value || '')).trim();
+
+                        if (newPw.length > 0) {
+                            if (chkPw.length === 0) {
+                                return '새 비밀번호를 확인해주세요.';
+                            }
+                            if (chkPw !== newPw) {
+                                return '새 비밀번호가 일치하지 않습니다.';
+                            }
+                        }
+                        return true;
+                    }
+                }}
                 />
             </View>
             <Text style={[styles.title, {marginTop:20}]}>이메일</Text>
@@ -223,10 +364,31 @@ function UserEdit({navigation, route}: userInfoScreenProps){
 
 //관리 화면
 function UserInfo({navigation}: userInfoScreenProps){
-    const [userData, setUserData] = useState<userType>(userItem);
+    const [userData, setUserData] = useState<userType|null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSave = (updatedData: userType) => {
-        setUserData(updatedData);
+    const loadUserInfo = useCallback(async () => {
+        setIsLoading(true);
+        const data = await fetchMemberInfoApi();
+        if(data){
+            setUserData(data);
+        }else{
+            setUserData(null);
+        }
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', ()=>{
+            loadUserInfo();
+        });
+        return unsubscribe;
+    }, [navigation, loadUserInfo]);
+
+
+    //백엔드 api 호출
+    const handleSave = () => {
+        loadUserInfo();
     }
 
     const UserDelete = () => {
@@ -235,15 +397,28 @@ function UserInfo({navigation}: userInfoScreenProps){
             [
                 {text: '취소'},
                 {text: '삭제',
-                    onPress : () =>{
-                        const rootStack = navigation.getParent()?.getParent();
+                    onPress : async () =>{
+                        try{
+                            const token = await AsyncStorage.getItem('userToken');
+                            await axios.post(`${API_URL}/member/delete`, {}, {
+                                headers: {'Authorization' : `Bearer ${token}`}
+                            });
 
-                        if(rootStack && rootStack.reset){
-                        rootStack.reset({
-                            index: 0,
-                            routes: [{name: 'Home'}]
-                        })
+                            await AsyncStorage.removeItem('userToken');
+
+                            const rootStack = navigation.getParent()?.getParent();
+
+                            if(rootStack && rootStack.reset){
+                            rootStack.reset({
+                                index: 0,
+                                routes: [{name: 'Home'}]
+                            })
+                            }
+                        } catch(error){
+                            console.error("탈퇴 오류");
                         }
+
+
                     }
                 }
             ]
@@ -258,9 +433,16 @@ function UserInfo({navigation}: userInfoScreenProps){
                 size={120}
                 color='#b9b9b9fb'
             />
-            <Text style={styles.textStyle}>{userData.id}</Text>
-            <Text style={styles.textStyle2}>{userData.email}</Text>
-            <TouchableOpacity style={[styles.button, {marginTop: 40}]} onPress={()=>navigation.navigate('UserEdit', {currentData: userData, onSave: handleSave})}>
+            <Text style={styles.textStyle}>{userData?.loginId}</Text>
+            <Text style={styles.textStyle2}>{userData?.email}</Text>
+            <TouchableOpacity style={[styles.button, {marginTop: 40}]} 
+                onPress={()=>{
+                    if(userData) {
+                        navigation.navigate('UserEdit', {currentData: {loginId: userData.loginId, email: userData.email, password:userData?.password}, onSave: handleSave});
+                    } else{
+                        console.error("회원 정보 불러오는 중")
+                    }}}
+                    disabled={!userData}>
                 <Text style={styles.buttonText}>
                     <Text>회원정보 수정</Text>
                 </Text>
@@ -315,7 +497,11 @@ const styles = StyleSheet.create({
     height:45,
     backgroundColor:'#ffffff',
     borderRadius: 8,
-    
+  },
+  input2:{
+    width:350,
+    height:45,
+    borderRadius: 8,
   },
   inputOutline: {
     borderColor: '#444444ff',

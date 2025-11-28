@@ -33,7 +33,7 @@ public class MemberService {
         member.setLoginId(dto.getLoginId());
         member.setPassword(passwordEncoder.encode(dto.getPassword())); 
         member.setEmail(dto.getEmail());
-        member.setRole(MemberRole.MEMBER);
+//        member.setRole(MemberRole.MEMBER);
         this.memberRepository.save(member);
         
         if (dto.getPets() != null && !dto.getPets().isEmpty()) {
@@ -51,14 +51,12 @@ public class MemberService {
         }
     }
     
-    // 로그인 ID(username)로 Member 객체를 조회하는 메서드(챗봇)
     public Member getMember(String loginId) {
         return memberRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginId));
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginId));
     }
     
-    
-    // 이메일 수정
+ // 이메일 수정
     @Transactional
     public void updateEmail(Member member, String newEmail) {
         // 이미 존재하는 이메일인지 확인 (단, 본인의 이메일은 허용)
@@ -86,5 +84,5 @@ public class MemberService {
         this.memberRepository.delete(member);
     }
     
- 
+
 }

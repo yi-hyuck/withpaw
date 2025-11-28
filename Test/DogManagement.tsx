@@ -1,62 +1,105 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { useState, useEffect } from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, Alert} from 'react-native';
 import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FlatList, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, useRoute } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import axios from 'axios';
 
 import { RootStackParamList } from './types';
 
 import DogAdd from './DogAdd';
 import DogEdit from './DogEdit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type DogMgmtScreenProps = NativeStackScreenProps<RootStackParamList,"DogManagement">;
 
-//데이터 구조
-interface DogItem{
-    id: string;
-    name: string;
-    dogName: string;
-    birth: string;
-    breed: string;
-    gender: string;
-    weight: string;
-    neutering: string;
+const API_URL = 'http://10.0.2.2:8090/pet';
+
+const fetchInfoApi = async () => {
+    try{
+        const token = await AsyncStorage.getItem('userToken');
+
+        if(!token){
+            console.error("토큰 없음");
+            return null;
+        }
+
+        const response = await axios.get(`${API_URL}/manage`, {
+            headers: {
+                'Authorization' : `Bearer ${token}`
+            }
+        });
+
+        return response.data;
+    } catch (error){
+        console.error("오류");
+        return null;
+    }
 }
 
-const DogTemporaryData: DogItem[] = [
-    {
-        id: 'd1',
-        name: '몽실',
-        breed: '말티즈',
-        birth: '2015-06-13',
-        gender: 'male',
-        weight: '3',
-        neutering: 'yes',
-        dogName: '몽실',
-    },
-    {
-        id: 'd2',
-        name: '너티',
-        breed: '테리어',
-        birth: '2020-01-01',
-        gender: 'male',
-        weight: '5',
-        neutering: 'yes',
-        dogName: '너티',
-    },
-    {
-        id: 'd3',
-        name: '메리',
-        breed: '시고르자브종',
-        birth: '2020-01-01',
-        gender: 'male',
-        weight: '5',
-        neutering: 'yes',
-        dogName: '메리',
-    }
-];
+//타입 정의
+interface PetDto{
+    petId: number;
+    name: string,
+    breed: string;
+    gender: string;
+    birthDate: string;
+    neuter: boolean;
+    weight: number;
+}
+
+interface userType {
+    loginId: string;
+    email: string;
+    password: string;
+    pets: PetDto[];
+}
+
+// interface DogItem{
+//     id: string;
+//     name: string;
+//     dogName: string;
+//     birth: string;
+//     breed: string;
+//     gender: string;
+//     weight: string;
+//     neutering: string;
+// }
+
+// const DogTemporaryData: DogItem[] = [
+//     {
+//         id: 'd1',
+//         name: '몽실',
+//         breed: '말티즈',
+//         birth: '2015-06-13',
+//         gender: 'male',
+//         weight: '3',
+//         neutering: 'yes',
+//         dogName: '몽실',
+//     },
+//     {
+//         id: 'd2',
+//         name: '너티',
+//         breed: '테리어',
+//         birth: '2020-01-01',
+//         gender: 'male',
+//         weight: '5',
+//         neutering: 'yes',
+//         dogName: '너티',
+//     },
+//     {
+//         id: 'd3',
+//         name: '메리',
+//         breed: '시고르자브종',
+//         birth: '2020-01-01',
+//         gender: 'male',
+//         weight: '5',
+//         neutering: 'yes',
+//         dogName: '메리',
+//     }
+// ];
 
 //헤더 바 관련
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -112,37 +155,52 @@ function DogMgmtScreen(){
 }
 
 //모드 변경
-interface DogItemProps extends DogItem {
+interface DogItemProps extends PetDto {
     mode : 'none' | 'edit' | 'delete';
-    onEdit: (id: string) => void;
-    onSelect: (id: string) => void;
+    onEdit: (id: number) => void;
+    onSelect: (id: number) => void;
     isSelect: boolean;
 }
 
 
 //강아지 카드 관리
-const DogItems = ({id, name, dogName, breed, birth, mode, onEdit, onSelect, isSelect}:DogItemProps)=>{
+const DogItems = ({petId, name, breed, birthDate, mode, onEdit, onSelect, isSelect}:DogItemProps)=>{
     const Age = (birthDay: string) => {
-        const separator = birthDay.includes('/') ? '/' : '-';
-        const parts = birthDay.split(separator);
-        const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        // const separator = birthDay.includes('/') ? '/' : '-';
+        // const parts = birthDay.split(separator);
+        // const birth = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        // const today = new Date();
+        // let age = today.getFullYear() - birth.getFullYear();
+        // const monthDiff = today.getMonth() - birth.getMonth();
+        // if(monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())){
+        //     age--;
+        // }
+        // return age >= 0 ? `${age}` : '0';
+        const parts = birthDay.split('-');
+        const birth = new Date(
+            parseInt(parts[0], 10),
+            parseInt(parts[1], 10) - 1,
+            parseInt(parts[2], 10)
+        );
+
         const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if(monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())){
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if(monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())){
             age--;
         }
         return age >= 0 ? `${age}` : '0';
     }
 
-    const displayAge = Age(birth);
+    const displayAge = Age(birthDate);
 
 
     const handlePress = () =>{
         if(mode === 'edit'){
-            onEdit(id);
+            onEdit(petId);
         } else if (mode === 'delete'){
-            onSelect(id);
+            onSelect(petId);
         }
     }
 
@@ -162,7 +220,7 @@ const DogItems = ({id, name, dogName, breed, birth, mode, onEdit, onSelect, isSe
             )}
             <View style={styles.CardContainer}>
                 <View style={styles.CardContent}>
-                    <Text style={styles.cardTitle}>{dogName}</Text>
+                    <Text style={styles.cardTitle}>{name}</Text>
                     <Text style={styles.cardData}>{displayAge}살</Text>
                     <Text style={styles.cardData}>{breed}</Text>
                 </View>
@@ -235,61 +293,61 @@ const ActionButton = ({mode, setMode, onAdd, onDelete, selectCount}:ActionButton
 
 //관리 화면
 function DogManagement({navigation, route}:DogMgmtScreenProps){
-    const [dogData, setDogData] = useState(DogTemporaryData);
+    const [dogData, setDogData] = useState<PetDto[]>([]);
     const [mode, setMode] = useState<'none' | 'edit' | 'delete'>('none');
-    const [selectIds, setSelectIds] = useState<string[]>([]);
+    const [selectIds, setSelectIds] = useState<number[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const loadPetInfo = useCallback(async () => {
+        setIsLoading(true);
+        const data = await fetchInfoApi();
+        if(data && data.pets){
+            setDogData(data.pets);
+        }else{
+            setDogData([]);
+        }
+        setIsLoading(false);
+    },[]);
+
+    useEffect(()=>{
+        loadPetInfo();
+    },[loadPetInfo]);
 
     useEffect(()=>{
         //새로운 강아지 추가
-        if(route.params?.newDog){
-            const newDog = route.params.newDog;
-
-            const newDogItem: DogItem = {
-                id: Date.now().toString(),
-                name: newDog.dogName,
-                dogName: newDog.dogName,
-                breed: newDog.dogBreed,
-                birth: newDog.dogBirth,
-                gender: newDog.dogGender,
-                weight: newDog.dogWeight,
-                neutering: newDog.neutering,
-            };
-
-            setDogData(prev => [...prev, newDogItem]);
-
-            navigation.setParams({newDog: undefined});
-        }
-
-        //강아지 수정
-        if(route.params?.updatedDog){
-            const updatedDog = route.params.updatedDog;
-            
-            const updatedDogItem: DogItem = {
-                id: updatedDog.id,
-                name: updatedDog.dogName,
-                dogName: updatedDog.dogName,
-                breed: updatedDog.dogBreed,
-                birth: updatedDog.dogBirth,
-                gender: updatedDog.dogGender,
-                weight: updatedDog.dogWeight,
-                neutering: updatedDog.neutering,
-            }
-
-            setDogData(prev => prev.map(dog => dog.id === updatedDog.id ? updatedDogItem : dog));
-
-            navigation.setParams({updatedDog: undefined});
-            setMode('none');
+        if(route.params?.newDog || route.params?.updatedDog){
+            loadPetInfo();
+            navigation.setParams({newDog: undefined, updatedDog: undefined});
+            setMode('none'); 
         }
     }, [route.params?.newDog, route.params?.updatedDog, navigation]);
 
 
-    const handleEdit = (dogId: string) => {
-        navigation.navigate('DogEdit', {dogId});
+    const handleEdit = (petId: number) => {
+        navigation.navigate('DogEdit', {petId});
         setMode('none')
     }
 
-    const handleSelectDelete = (dogId: string) => {
-        setSelectIds(prev => prev.includes(dogId) ? prev.filter(id => id !== dogId) : [...prev, dogId])
+    const handleSelectDelete = (petId: number) => {
+        setSelectIds(prev => prev.includes(petId) ? prev.filter(id => id !== petId) : [...prev, petId])
+    }
+
+    const deletePetApi = async (petId: number) => {
+        try{
+            const token = await AsyncStorage.getItem('userToken');
+            if(!token){
+                console.error("토큰 없음");
+                return false;
+            }
+
+            await axios.delete(`${API_URL}/delete/${petId}`, {
+                headers: {'Authorization' : `Bearer ${token}`}
+            });
+            return true;
+        } catch (error){
+            console.error("삭제 오류", error);
+            return false;
+        }
     }
 
     const handleDelete = () => {
@@ -304,9 +362,24 @@ function DogManagement({navigation, route}:DogMgmtScreenProps){
             [
                 {text: '취소'},
                 {text: '삭제',
-                    onPress: () => {
-                        const newDogData = dogData.filter(dog => !selectIds.includes(dog.id))
-                        setDogData(newDogData)
+                    onPress: async () => {
+                        let allSuccess = true;
+
+                        for (const petId of selectIds){
+                            const success = await deletePetApi(petId);
+                            if(!success){
+                                allSuccess = false;
+                                break;
+                            }
+                        }
+
+                        if(allSuccess){
+                            Alert.alert('성공', '선택한 반려동물을 삭제하였습니다.')
+                        } else{
+                            Alert.alert('오류', '반려동물 삭제 중 오류가 발생하였습니다.')
+                        }
+                        
+                        loadPetInfo()
                         setSelectIds([])
                         setMode('none')
                     }
@@ -328,9 +401,9 @@ function DogManagement({navigation, route}:DogMgmtScreenProps){
                                             mode = {mode}
                                             onEdit={handleEdit}
                                             onSelect={handleSelectDelete}
-                                            isSelect={selectIds.includes(item.id)}
+                                            isSelect={selectIds.includes(item.petId)}
                                         />}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.petId.toString()}
                 contentContainerStyle={styles.listPadding}
             />
             <ActionButton
