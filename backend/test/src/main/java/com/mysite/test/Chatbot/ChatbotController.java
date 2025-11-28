@@ -12,9 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping; // (추가)
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.mysite.test.member.Member;
@@ -33,19 +32,28 @@ public class ChatbotController {
     @Autowired
     private PetService petService;
 
-    // 챗봇 인터페이스 페이지로 이동
-    @GetMapping("/chatbot")
-    public String getChatbotPage() {
-        return "chatbot-page"; 
-    }
+    // 챗봇 인터페이스 페이지로 이동 
+//    @GetMapping("/chatbot")
+//    public String getChatbotPage() {
+//        return "chatbot-page"; 
+//    }
 
-    // 챗봇 경로
+    // 챗봇 경로 JSON 요청 처리 및 응답
     @PostMapping("/api/chatbot/ask")
     @ResponseBody
     public String askChatbot(
-        @RequestParam("userMessage") String userMessage,
+//    	@RequestParam String question,
+    	@RequestBody ChatbotRequest request,
         @AuthenticationPrincipal UserDetails userDetails // 현재 로그인된 사용자 정보
     ) {
+    	if (userDetails == null) {
+    		return "{\"error\": \"로그인이 필요합니다.\"}";
+    	}
+    	
+//    	String userMessage = question;
+        // DTO에서 사용자 메시지 문자열 추출
+        String userMessage = request.getUserMessage(); 
+        
         // 로그인된 사용자 정보 가져오기 (loginId로 Member 객체 조회)
         String loginId = userDetails.getUsername();
         Member member = memberService.getMember(loginId);
