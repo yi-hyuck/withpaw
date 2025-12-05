@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,38 +63,43 @@ public class ScheduleService {
 
         try {
             // Schedule 생성
-            Schedule s = new Schedule();
-            s.setMemberId(dto.getMemberId());
-            s.setTitle(dto.getTitle());
-            s.setRecurring(isRecurring);
-            
-            LocalDateTime combinedDateTime = combineDateAndtime(dto.getStartDate(), dto.getTime());
-            s.setScheduleTime(combinedDateTime);
-            
-            s.setRemindBeforeMinutes(dto.getRemindBeforeMinutes());
+        	Schedule s = new Schedule();
+    		s.setMemberId(dto.getMemberId());
+    		s.setTitle(dto.getTitle());
+    		s.setRecurring(dto.getRecurring());
+    		s.setStartDate(dto.getStartDate());
+    		s.setEndDate(dto.getEndDate());
+    		s.setRemindBeforeMinutes(dto.getRemindBeforeMinutes());
+    		
+    		s.setScheduleTime(combineDateAndtime(dto.getStartDate(), dto.getTime()));
 
-            if (isRecurring) {
+            if (Boolean.TRUE.equals(dto.getRecurring())) {
                 RecurrenceRule rule = new RecurrenceRule();
                 rule.setType(RecurrenceType.WEEKLY);
-                rule.setInterval(dto.getInterval());
-                s.setRecurrenceRule(rule);
-                s.setStartDate(dto.getStartDate());
-                s.setEndDate(dto.getEndDate());               
+                
+                DayOfWeek startDay = dto.getStartDate().getDayOfWeek();
+                rule.setDaysOfWeek(List.of(startDay));
+                
+                rule.setInterval(dto.getInterval() != null && dto.getInterval() > 0 ? dto.getInterval() : 1);
+                
+                s.setRecurrenceRule(rule);              
             } else {
             	//단일일정
             	s.setStartDate(dto.getStartDate());
             	s.setEndDate(dto.getEndDate());
+            	s.setRecurrenceRule(null);
             }
             
             // DB 저장
-            Schedule saved = scheduleRepository.save(s);
-            saved = scheduleRepository.findById(saved.getId())
+            Schedule savedSchedule = scheduleRepository.save(s);
+            savedSchedule = scheduleRepository.findById(savedSchedule.getId())
                     .orElseThrow(() -> new InternalServerException("저장된 일정을 다시 조회할 수 없습니다."));
             
             // 자동 인스턴스 생성
-            instanceGenerator.generateInstances(saved);
+            List<LocalDateTime> occurrences = generateOccurrences(savedSchedule);
+    		instanceGenerator.generateInstances(savedSchedule, occurrences);
 
-            return ScheduleResponseDTO.fromEntity(saved);
+    		return ScheduleResponseDTO.fromEntity(savedSchedule);
 
         } catch (BadRequestException e) {
             throw e;
@@ -220,42 +226,47 @@ public class ScheduleService {
 
 	    List<LocalDateTime> occurrences = new ArrayList<>();
 
-	    LocalDate current = schedule.getStartDate();
-	    LocalDate end = schedule.getEndDate() != null ? schedule.getEndDate() : current.plusMonths(3);
-	    int interval = rule.getInterval() != null ? rule.getInterval() : 1;
+	    RecurrenceRule recurrenceRule = schedule.getRecurrenceRule();
+	    LocalDate start = schedule.getStartDate();
+	    LocalDate end = schedule.getEndDate();
+	    
+	    if (schedule.getScheduleTime() == null) {
+	        throw new BadRequestException("일정 시간 정보가 올바르지 않습니다.");
+	    }
+	    LocalTime time = schedule.getScheduleTime().toLocalTime(); 
+	    
+	    if (Boolean.FALSE.equals(schedule.getRecurring()) || recurrenceRule == null || start == null || end == null) {
+	    	if (Boolean.FALSE.equals(schedule.getRecurring())) {
+	    		occurrences.add(schedule.getScheduleTime());
+	    	}
+	    	return occurrences;
+	    }
+	    LocalDate current = start;
+	    int interval = rule.getInterval() != null && rule.getInterval() > 0 ? rule.getInterval() : 1;
+	    
+	    // WEEKLY 반복 (요청에 따라 시작일의 요일만 반복)
+	    List<DayOfWeek> days = rule.getDaysOfWeek() != null && !rule.getDaysOfWeek().isEmpty() 
+	    		? rule.getDaysOfWeek() 
+	    		: List.of(start.getDayOfWeek()); // 시작일의 요일만 사용
 
-//	    switch (rule.getType()) {
-//	        case DAILY -> {
-//	            while (!current.isAfter(end)) {
-//	                occurrences.add(LocalDateTime.of(current, schedule.getScheduleTime().toLocalTime()));
-//	                current = current.plusDays(interval);
-//	            }
-//	        }
-//	        case WEEKLY -> {
-//	            List<DayOfWeek> days = rule.getDaysOfWeek() != null ? rule.getDaysOfWeek() : List.of();
-//	            
-//	            while (!current.isAfter(end)) {
-//	                for (DayOfWeek day : days) {
-//	                    LocalDate d = current.with(java.time.temporal.TemporalAdjusters.nextOrSame(day));
-//	                    if (!d.isAfter(end))
-//	                        occurrences.add(LocalDateTime.of(d, schedule.getScheduleTime().toLocalTime()));
-//	                }
-//	                current = current.plusWeeks(interval);
-//	            }
-//	        }
-//	        case MONTHLY -> {
-//	            int day = rule.getDayOfMonth() != null
-//	                    ? rule.getDayOfMonth()
-//	                    : (schedule.getStartDate() != null ? schedule.getStartDate().getDayOfMonth() : 1);
-//	            while (!current.isAfter(end)) {
-//	                LocalDate d = current.withDayOfMonth(Math.min(day, current.lengthOfMonth()));
-//	                occurrences.add(LocalDateTime.of(d, schedule.getScheduleTime().toLocalTime()));
-//	                current = current.plusMonths(interval);
-//	            }
-//	        }
-//	        default -> throw new BadRequestException("지원하지 않는 반복 유형입니다.");
-//	    }
-
+	    LocalDate currentWeekStart = current;
+	    while (!currentWeekStart.isAfter(end)) {
+	        
+	        // 현재 주차 내에서 지정된 요일 계산 (DaysOfWeek는 하나만 존재)
+	        for (DayOfWeek day : days) {
+	            LocalDate targetDay = currentWeekStart.with(TemporalAdjusters.nextOrSame(day));
+	            
+	            // targetDay가 전체 일정 시작일(start) 이후이며, 종료일(end) 이내일 때만 추가
+	            if (!targetDay.isBefore(start) && !targetDay.isAfter(end)) {
+	                occurrences.add(LocalDateTime.of(targetDay, time));
+	            }
+	        }
+	        
+	        // 다음 반복 주기로 이동 (n주마다)
+	        currentWeekStart = currentWeekStart.plusWeeks(interval);
+	    }
+	    
+	    occurrences.sort(null);
 	    return occurrences;
 	}
 	

@@ -76,7 +76,8 @@ public class SecurityConfig {
 					.requestMatchers(new AntPathRequestMatcher("/member/login")).permitAll()
 		            .requestMatchers(new AntPathRequestMatcher("/member/signup")).permitAll()
 		            .requestMatchers(new AntPathRequestMatcher("/member/signup/pet")).permitAll()
-					.requestMatchers(new AntPathRequestMatcher("/**")).permitAll())
+		            .requestMatchers(new AntPathRequestMatcher("/api/schedules/**")).permitAll()
+		            .requestMatchers(new AntPathRequestMatcher("/**")).permitAll())
 					
 			.formLogin((formLogin) -> formLogin.disable())
 //			.addFilterAt(jsonAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)

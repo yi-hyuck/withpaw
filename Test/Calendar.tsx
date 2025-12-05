@@ -4,7 +4,7 @@ import { Calendar, DateData, LocaleConfig } from "react-native-calendars";
 import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useNavigation, RouteProp } from "@react-navigation/native";
+import { useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
 import axios from "axios";
 
@@ -47,7 +47,7 @@ interface Schedule {
   time: string;
 }
 
-const DEFAULT_TIME = 'T10:00:00';
+const DEFAULT_TIME = '00:00:00';
 
 interface scheduleResponseDTO{
   id: number;
@@ -102,7 +102,7 @@ LocaleConfig.defaultLocale = 'kr';
 
 //api
 //추가
-const createSchedule = async (schedule: any) => {
+const createSchedule = async (schedule: any, token: string) => {
   const requestBody = {
     memberId: MEMBER_ID,
     id: schedule.id,
@@ -115,20 +115,32 @@ const createSchedule = async (schedule: any) => {
     remindBeforeMinutes: 5,
   };
 
-  const response = await axios.post(API_URL, requestBody);
+  const response = await axios.post(API_URL, requestBody, {
+    headers:{
+      'Authorization' : `Bearer ${token}`
+    }
+  });
   return response.data.data;
 }
 
 //조회
-const fetchSchedules = async (): Promise<Schedule[]> => {
-  const scheduleResponse = await axios.get(`${API_URL}/member/${MEMBER_ID}`);
+const fetchSchedules = async (token: string): Promise<Schedule[]> => {
+  const scheduleResponse = await axios.get(`${API_URL}/member/${MEMBER_ID}`,{
+    headers:{
+      'Authorization' : `Bearer ${token}`
+    }
+  });
   const originalSchedules: scheduleResponseDTO[] = scheduleResponse.data.data;
 
   let allInstances: Schedule[] = [];
 
   for (const s of originalSchedules) {
     try{
-      const instanceResponse = await axios.get(`${API_URL}/${s.id}/instances`);
+      const instanceResponse = await axios.get(`${API_URL}/${s.id}/instances`, {
+        headers:{
+          'Authorization' : `Bearer ${token}`
+        }
+      });
       const instances: scheduleInstanceResponseDTO[] = instanceResponse.data.data;
 
       const instanceSchedules: Schedule[] = instances.map((i:scheduleInstanceResponseDTO) => ({
@@ -151,8 +163,12 @@ const fetchSchedules = async (): Promise<Schedule[]> => {
 }
 
 //삭제
-const deleteScheduleApi = async (scheduleId: number) => {
-  await axios.delete(`${API_URL}/${scheduleId}`)
+const deleteScheduleApi = async (scheduleId: number, token: string) => {
+  await axios.delete(`${API_URL}/${scheduleId}`, {
+    headers:{
+      'Authorization' : `Bearer ${token}`
+    }
+  })
 }
 
 
@@ -179,20 +195,36 @@ const HEADER_STYLE = {
 function CalendarMainScreen() { //스텍 화면
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [authToken, setAuthToken] = useState<string>('dummy-jwt-token-for-testing');
   // const mockApi = getMockApi({schedules, setSchedules});
+  
+  const loadSchedules = useCallback(async () => {
+    try {
+        const data = await fetchSchedules(authToken); 
+        setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
+    } catch (e) {
+        console.error("Fetch Error:", e);
+    }
+  }, [authToken]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedules();
+    }, [loadSchedules])
+  );
 
   //초기 데이터 불러오기
   useEffect(() => {
     const loadSchedules = async () => {
         try {
-            const data = await fetchSchedules(); 
+            const data = await fetchSchedules(authToken); 
             setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
         } catch (e) {
             console.error("Fetch Error:", e);
         }
     };
     loadSchedules();
-  }, []);
+  }, [authToken]);
 
   //일정 추가
   const handleScheduleAdd = async (newSchedules: Schedule[]) => {
@@ -200,8 +232,8 @@ function CalendarMainScreen() { //스텍 화면
 
     setIsSaving(true);
     try {
-        await createSchedule(newSchedules[0]);
-        const updatedList = await fetchSchedules(); 
+        await createSchedule(newSchedules[0], authToken);
+        const updatedList = await fetchSchedules(authToken); 
         setSchedules(updatedList.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
     } catch (e) {
         Alert.alert('오류', '일정 추가 중 오류가 발생했습니다.');
@@ -213,7 +245,7 @@ function CalendarMainScreen() { //스텍 화면
 
   const handleDeleteSchedule = async (idToDelete: number) => {
     try {
-        await deleteScheduleApi(idToDelete);
+        await deleteScheduleApi(idToDelete, authToken);
         setSchedules(prev => prev.filter(s => s.originalId !== idToDelete));
     } catch (e) {
         Alert.alert('오류', '일정 삭제 중 오류가 발생했습니다.');
@@ -460,7 +492,7 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
           id: originalId, 
           name, 
           startDate, 
-          endDate: startDate,
+          endDate: endDate,
           repeats, 
           repeatWeeks: repeatWeeksInt, 
           originalId: originalId,
@@ -687,7 +719,7 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
     if (selectDate){
       marks[selectDate] = {
         ...(marks[selectDate] || {}),
-        textColor: '#00ff0dff',
+        textColor: '#ff8800ff',
         selected: true,
         disableTouchEvent: true,
       }

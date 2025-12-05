@@ -198,16 +198,17 @@ public class ScheduleInstanceService {
 	            .filter(i -> !i.getCompleted())
 	            .forEach(instanceRepository::delete);
 
-	    // 새로운 발생 시점 생성
-	    List<LocalDateTime> times = generateOccurrences(schedule);
+	    // 새로운 발생 시점 생성 (ScheduleService의 통합 로직 사용)
+	    List<LocalDateTime> times = scheduleService.generateOccurrences(schedule); 
+	    
 	    for (LocalDateTime time : times) {
 	        boolean alreadyExists = existing.stream()
 	                .anyMatch(i -> i.getOccurrenceTime().equals(time));
+	        
+	        // 기존에 존재하지 않는 인스턴스만 새로 생성 및 저장
 	        if (!alreadyExists) {
-	            ScheduleInstance instance = new ScheduleInstance();
-	            instance.setSchedule(schedule);
-	            instance.setOccurrenceTime(time);
-	            instanceRepository.save(instance);
+	            ScheduleInstance newInstance = new ScheduleInstance(schedule, time);
+	            instanceRepository.save(newInstance);
 	        }
 	    }
 	}
