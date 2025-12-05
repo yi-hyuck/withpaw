@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Pressable, Alert, Modal, FlatList } from 'react-native';
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigation, RouteProp } from "@react-navigation/native";
@@ -19,6 +19,10 @@ type DogAddScreenNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
     'DogAdd'
   >;
+
+type Breed = {
+  breedname: string;
+}
 
 //날짜 입력
 const formatDate = (date:Date, f:string) => {
@@ -39,19 +43,60 @@ const formatDate = (date:Date, f:string) => {
   });
 }
 
+const createPetApi = async (requestBody: any) => {
+  try{
+    const token = await AsyncStorage.getItem('userToken');
+
+    if(!token){
+        console.error("토큰 없음");
+        return null;
+    }
+
+    const response = await axios.post(`${API_URL}/create`, requestBody, {
+      headers: {
+        'Authorization' : `Bearer ${token}`,
+        'Content-Type' : 'application/json'
+      }
+    });
+
+    console.log("추가 응답:", response.status, response.data);
+    return true;
+  }catch (error:any){
+    const status = error.response?.status;
+    const errorDetail = error.response?.data;
+    
+    if (status === 400 && errorDetail) {
+      console.error("400 Bad Request Detail:", errorDetail);
+
+      if (typeof errorDetail === 'object' && errorDetail !== null) {
+              const errors = Object.entries(errorDetail).map(([key, value]) => 
+                  `[${key}] ${value}`
+              ).join('\n');
+              
+              Alert.alert("등록 실패 (400)", `입력 오류:\n${errors}`);
+    } else {
+          Alert.alert("등록 실패", "서버 요청에 실패했습니다.");
+    }
+    }
+  }
+}
+
 function DogAdd(){
     const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation<DogAddScreenNavigationProp>();
+    const [breeds, setBreeds] = useState<Breed[]>([]);
+    const [isBreedModalVisible, setIsBreedModalVisible] = useState(false);
+    const [searchText, setSearchText] = useState('');
 
     //폼 관리
     const {control, handleSubmit, formState: {errors}, setValue, watch} = useForm({
       defaultValues: {
-        dogName: '',
-        dogGender: '',
-        dogBirth: '',
-        dogBreed: '',
-        dogWeight: '',
-        neuter: 0,
+        petname: '',
+        gender: '',
+        birthdate: '',
+        breed: '',
+        weight: '',
+        neuter: false,
       }
     });
 
@@ -61,7 +106,7 @@ function DogAdd(){
     //날짜 변수
     const [text, onChangeText] = useState("");
     const [visible, setVisible] = useState(false); //날짜 선택
-    const dogBirthValue = watch('dogBirth');
+    const dogBirthValue = watch('birthdate');
 
     //중성화 변수
     const [selectNeutering, setSelectNeutering] = useState('');
@@ -70,42 +115,39 @@ function DogAdd(){
     const onSubmit = async (data:any)=>{
       if(isLoading) return;
 
+      const weightValue = parseFloat(data.weight);
+
+      if (isNaN(weightValue) || weightValue < 0.1) {
+          Alert.alert("입력 오류", "몸무게를 0.1kg 이상으로 정확히 입력해주세요.");
+          return;
+      }
+
       setIsLoading(true);
 
       const petData = {
-        name: data.dogName,
-        breed: data.dogBreed,
-        gender: data.dogGender,
-        birthDate: data.dogBirth,
+        petname: data.petname,
+        breed: data.breed,
+        gender: data.gender,
+        birthdate: data.birthdate,
         neuter: data.neuter,
-        weight: parseFloat(data.dogWeight)
+        weight: parseFloat(data.weight)
       }
 
-      try{
-        const token = await AsyncStorage.getItem('userToken');
+      const success = await createPetApi(petData); 
 
-        if(!token){
-            console.error("토큰 없음");
-            return null;
-        }
-
-        const response = await axios.post(`${API_URL}/create`, petData, {
-          headers: {
-            'Authorization' : `Bearer ${token}`,
-            'Content-Type' : 'application/json'
-          }
-        });
-      }catch (error:any){
-        console.error("에러발생", error.message);
+      if(success) {
+        setIsLoading(false);
+        navigation.goBack();
+      }else{
+        setIsLoading(false);
+        Alert.alert("오류", "정보 수정에 실패했습니다.");
       }
-
-      navigation.goBack();
     }
 
     //성별 설정
     const handleGenderSelect = (value:string) => {
       setSelectGender(value);
-      setValue('dogGender', value, { shouldValidate: true });
+      setValue('gender', value, { shouldValidate: true });
     }
 
     //성별 버튼 설정
@@ -122,9 +164,9 @@ function DogAdd(){
 
     //중성화 설정
     const handleNeuteringSelect = (value: string) => {
-      const numericValue = Number(value);
+      const booleanValue = value === '1';
       setSelectNeutering(value);
-      setValue('neuter', numericValue, {shouldValidate: true});
+      setValue('neuter', booleanValue, {shouldValidate: true});
     }
     
     const renderNeuteringButton = (label:string, value: string) => (
@@ -152,9 +194,42 @@ function DogAdd(){
     //날짜 확정
     const handleConfirm = (date:Date)=> {
       const formattedDate = formatDate(date, 'yyyy-MM-dd');
-      setValue('dogBirth', formattedDate, {shouldValidate:true});
+      setValue('birthdate', formattedDate, {shouldValidate:true});
       setVisible(false);
     }
+
+    //품종 목록을 가져옴
+    const fetchBreeds = async () => {
+      try{
+        const response = await axios.get<Breed[]>(`${API_URL}/breeds`);
+        setBreeds(response.data);
+      } catch (error) {
+        Alert.alert("오류", "품종 목록을 불러오지 못했습니다.");
+      }
+    }
+
+    useEffect(() => {
+      fetchBreeds();
+    }, []);
+
+    const handleBreedSelect = (breedname: string) => {
+      setValue('breed', breedname, {shouldValidate: true});
+      setIsBreedModalVisible(false);
+    }
+
+    const filteredBreeds = breeds.filter(breed =>
+      breed.breedname.toLowerCase().includes(searchText.toLowerCase())
+    )
+
+    const renderBreedItem = ({ item }: { item: Breed }) => (
+      <Pressable
+        style={styles.breedItem}
+        onPress={() => handleBreedSelect(item.breedname)}>
+        <Text style={styles.breedText}>{item.breedname}</Text>
+      </Pressable>
+    );
+
+    const dogBreedValue = watch('breed');
 
 
     return (
@@ -163,7 +238,7 @@ function DogAdd(){
         <View style={styles.container}>
           <Controller
             control={control}
-            name="dogName"
+            name="petname"
             render={({field: {onChange, value, onBlur}}) => (
               <View>
                 <TextInput
@@ -174,7 +249,7 @@ function DogAdd(){
                   onChangeText={(value)=>onChange(value)}
                   autoCapitalize="none"
                 />
-                {errors?.dogName?.message && <Text style={styles.error}>{String(errors.dogName.message)}</Text>}
+                {errors?.petname?.message && <Text style={styles.error}>{String(errors.petname.message)}</Text>}
             </View>
             )}
             rules={{required: '이름을 입력해주세요.'}}
@@ -184,7 +259,7 @@ function DogAdd(){
         <View style={styles.container}>
           <Controller
             control={control}
-            name="dogGender"
+            name="gender"
             rules={{required: '성별을 선택해주세요.'}}
             render={()=>(
               <View>
@@ -192,7 +267,7 @@ function DogAdd(){
                   {renderButton('남', 'M')}
                   {renderButton('여', 'F')}
                 </View>
-                {errors?.dogGender?.message && <Text style={styles.error}>{String(errors.dogGender.message)}</Text>}
+                {errors?.gender?.message && <Text style={styles.error}>{String(errors.gender.message)}</Text>}
               </View>
             )}
           />
@@ -218,7 +293,7 @@ function DogAdd(){
         <View style={styles.container}>
           <Controller
             control={control}
-            name="dogBirth"
+            name="birthdate"
             rules={{required: '생년월일을 입력해주세요.'}}
             render={()=>(
               <View>
@@ -233,7 +308,7 @@ function DogAdd(){
                     value={dogBirthValue}
                   />
                 </TouchableOpacity>
-                {errors?.dogBirth?.message && <Text style={styles.error}>{String(errors.dogBirth.message)}</Text>}
+                {errors?.birthdate?.message && <Text style={styles.error}>{String(errors.birthdate.message)}</Text>}
               </View>
             )}
           />
@@ -244,35 +319,70 @@ function DogAdd(){
                 mode="date"
                 onConfirm={handleConfirm}
                 onCancel={onCancel}
+                maximumDate={new Date()}
         />
 
         <Text style={[styles.title, {marginTop:30}]}>품종</Text>
-        <View style={styles.container}>
-          <Controller
-            control={control}
-            name="dogBreed"
-            render={({field: {onChange, value, onBlur}}) => (
-              <View>
-                <TextInput
-                  placeholder=" 품종 입력"
-                  style={[styles.input, {marginTop:5}]}
-                  onBlur={onBlur}
-                  value={value}
-                  onChangeText={(value)=>onChange(value)}
-                  autoCapitalize="none"
-                />
-                {errors?.dogBreed?.message && <Text style={styles.error}>{String(errors.dogBreed.message)}</Text>}
-            </View>
-            )}
-            rules={{required: '품종을 입력해주세요.'}}
-          />
-        </View>
+                <View style={styles.container}>
+                  <Controller
+                    control={control}
+                    name="breed"
+                    render={() => (
+                      <View>
+                        <TouchableOpacity onPress={() => setIsBreedModalVisible(true)}>
+                          <TextInput
+                            pointerEvents="none"
+                            placeholder=" 품종 입력"
+                            style={[styles.input, {marginTop:5}]}
+                            placeholderTextColor={dogBreedValue ? '#000000' : '#838383ff'}
+                            // onBlur={onBlur}
+                            underlineColorAndroid="transparent"
+                            editable={false}
+                            value={dogBreedValue}
+                            // onChangeText={(value)=>onChange(value)}
+                            // autoCapitalize="none"
+                          />
+                        </TouchableOpacity>
+                        {errors?.breed?.message && <Text style={styles.error}>{String(errors.breed.message)}</Text>}
+                    </View>
+                    )}
+                    rules={{required: '품종을 입력해주세요.'}}
+                  />
+                </View>
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={isBreedModalVisible}
+                  onRequestClose={() => setIsBreedModalVisible(false)}>
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                      <Text style={styles.modalTitle}>품종 선택</Text>
+                      <TextInput
+                       style={styles.searchBar}
+                       placeholder="품종 검색"
+                       value={searchText}
+                       onChangeText={setSearchText}
+                      />
+                      <FlatList
+                        data={filteredBreeds}
+                        keyExtractor={(item) => item.breedname}
+                        renderItem={renderBreedItem}
+                        style={styles.flatList}
+                      />
+                      <Pressable
+                        style={[styles.closeButton]}
+                        onPress={() => setIsBreedModalVisible(false)}>
+                        <Text style={styles.closeButtonText}>닫기</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Modal>
 
         <Text style={[styles.title, {marginTop:30}]}>몸무게</Text>
         <View style={styles.container}>
           <Controller
             control={control}
-            name="dogWeight"
+            name="weight"
             render={({field: {onChange, value, onBlur}}) => (
               <View>
                 <TextInput
@@ -283,7 +393,7 @@ function DogAdd(){
                   onChangeText={(value)=>onChange(value)}
                   keyboardType="number-pad"
                 />
-                {errors?.dogWeight?.message && <Text style={styles.error}>{String(errors.dogWeight.message)}</Text>}
+                {errors?.weight?.message && <Text style={styles.error}>{String(errors.weight.message)}</Text>}
             </View>
             )}
             rules={{
@@ -375,6 +485,69 @@ const styles = StyleSheet.create({
     color:'#ffffff',
     fontWeight: 'bold',
   },
+  modalOverlay:{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView:{
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle:{
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  flatList:{
+    maxHeight: 300, 
+    width: '100%',
+  },
+  breedItem:{
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ffffffff',
+    width: '100%',
+    alignItems: 'center',
+  },
+  breedText:{
+    fontSize: 16,
+  },
+  closeButton:{
+    marginTop: 20,
+    backgroundColor: '#ffbb00ff',
+    padding: 10,
+    borderRadius: 10,
+    width: '50%',
+    alignItems: 'center',
+  },
+  closeButtonText:{
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  searchBar:{
+    width: '100%',
+    height: 40,
+    borderColor: '#eeeeeeff',
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: '#ffffffff',
+    paddingLeft: 10,
+    marginBottom: 10,
+  }
 
 });
 

@@ -26,7 +26,7 @@ export type NewDogData = {
   dogBirth: string,
   dogBreed: string,
   dogWeight: string,
-  neutering: string,
+  neuter: boolean,
 };
 
 interface userType {

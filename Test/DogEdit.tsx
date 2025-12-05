@@ -16,22 +16,22 @@ const API_URL = 'http://10.0.2.2:8090/pet'
 //타입 정의
 interface petDto{
   petId: number;
-  name: string;
+  petname: string;
   breed: string;
   gender: string;
-  birthDate: string;
-  neuter: number;
+  birthdate: string;
+  neuter: boolean;
   weight: number;
 }
 
 //폼 필드 타입 정의
 interface PetEditForm{
-  dogName: string;
-  dogGender: string;
-  dogBirth: string;
-  dogBreed: string;
-  dogWeight: string;
-  neuter: number;
+  petname: string;
+  gender: string;
+  birthdate: string;
+  breed: string;
+  weight: string;
+  neuter: boolean;
 }
 
 type DogEditScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'DogEdit'>;
@@ -93,16 +93,29 @@ const updatePetApi = async (petId: number, requestBody: any) => {
         return false;
     }
     
-    await axios.post(`${API_URL}/modify/${petId}`, requestBody, {
+    const response = await axios.post(`${API_URL}/modify/${petId}`, requestBody, {
       headers:{
         'Authorization' : `Bearer ${token}`,
         'Content-Type' : 'application/json',
       }
     });
+    console.log("수정 응답:", response.status, response.data);
     return true;
   } catch (error:any){
-    console.error("펫 수정 오류", error.response.data||error.message);
-    return false;
+    if (error.response.status === 400 && error.response.data.errors) {
+        // 백엔드에서 {errors: {...}} 형태로 보낸 경우
+      const errorMessages = Object.values(error.response.data.errors).join('\n');
+      throw new Error(`유효성 검사 실패:\n${errorMessages}`);
+    }
+    if (error.response.data.data && error.response.data.data.message) {
+        // 기타 서버 에러 메시지
+        throw new Error(error.response.data.data.message);
+    }
+    // 백엔드에서 메시지만 보낸 경우
+    if (error.response.data.message) {
+        throw new Error(error.response.data.message);
+    }
+    throw new Error("서버와의 통신 중 알 수 없는 오류가 발생했습니다.");
   }
 }
 
@@ -126,18 +139,18 @@ function DogEdit(){
 
     const {control, handleSubmit, formState: {errors}, setValue, watch, reset} = useForm<PetEditForm>({
         defaultValues: {
-          dogName: '',
-          dogBirth: '',
-          dogWeight: '',
-          neuter: 0,
+          petname: '',
+          birthdate: '',
+          weight: '',
+          neuter: false,
         }
     });
 
     //변수
     const [selectGender, setSelectGender] = useState<string>('');
     const [visible, setVisible] = useState(false); //날짜 선택
-    const dogBirthValue = watch('dogBirth');
-    const [selectNeutering, setSelectNeutering] = useState('');
+    const dogBirthValue = watch('birthdate');
+    const [selectNeutering, setSelectNeutering] = useState('0');
     const [isLoading, setIsLoading] = useState(true);
     const [initialData, setInitialData] = useState<petDto|null>(null);
 
@@ -148,16 +161,16 @@ function DogEdit(){
       if(data) {
         setInitialData(data);
 
-        setValue('dogName', data.name);
-        setValue('dogGender', data.gender);
-        setValue('dogBirth', data.birthDate);
-        setValue('dogBreed', data.breed);
-        setValue('dogWeight', data.weight.toString());
-        const neuterNumericValue = data.neuter ? 1 : 0;
-        setValue('neuter', neuterNumericValue);
+        setValue('petname', data.petname);
+        setValue('gender', data.gender);
+        setValue('birthdate', data.birthdate);
+        setValue('breed', data.breed);
+        setValue('weight', data.weight.toString());
+        // const neuterNumericValue = data.neuter ? 1 : 0;
+        setValue('neuter', data.neuter);
 
         setSelectGender(data.gender);
-        setSelectNeutering(String(neuterNumericValue));
+        setSelectNeutering(data.neuter ? '1' : '0');
       }
       setIsLoading(false);
     },[petId, setValue, navigation]);
@@ -171,23 +184,38 @@ function DogEdit(){
     const onSubmit = async(data:PetEditForm) => {
       if(isLoading || !initialData) return;
 
-      const finalName = data.dogName.trim() === '' ? initialData.name : data.dogName;
-      const finalBirthDate = data.dogBirth.trim() === '' ? initialData.birthDate : data.dogBirth;
+      const finalName = data.petname.trim() || initialData.petname;
+      const finalBirthDate = data.birthdate.trim() || initialData.birthdate;
+      let finalWeight: number = initialData.weight;
+      const parsedWeight = parseFloat(data.weight);
+      // let finalWeight = parseFloat(data.weight);
+      if (isNaN(parsedWeight) || parsedWeight < 0.1) {
+          finalWeight = initialData.weight;
+      }
+      const finalNeuter = data.neuter;
       const finalBreed = initialData.breed;
       const finalGender = initialData.gender;
 
-      let finalWeight = parseFloat(data.dogWeight);
-      if(isNaN(finalWeight) || finalWeight < 0.1){
-        finalWeight = initialData.weight;
-      }
+      // const finalName = data.dogName.trim() === '' ? initialData.petname : data.dogName;
+      // const finalBirthDate = data.dogBirth.trim() === '' ? initialData.birthdate : data.dogBirth;
+      // // const finalBreed = initialData.breed;
+      // // const finalGender = initialData.gender;
 
-      const finalNeuter = (typeof data.neuter === 'number' && (data.neuter === 0 || data.neuter === 1)) ? data.neuter : (initialData.neuter ? 1 : 0);
+      // let finalWeight = parseFloat(data.dogWeight);
+      // if(isNaN(finalWeight) || finalWeight < 0.1){
+      //   finalWeight = initialData.weight;
+      // }
+
+      // // const finalNeuter = (typeof data.neuter === 'number' && (data.neuter === 0 || data.neuter === 1)) ? data.neuter : (initialData.neuter ? 1 : 0);
+      // const finalNeuter = typeof data.neuter === 'boolean' ? data.neuter : initialData.neuter;
 
       const requestBody = {
         petname : finalName,
-        birthDate : finalBirthDate,
+        birthdate : finalBirthDate,
         neuter : finalNeuter,
         weight: finalWeight,
+        breed : finalBreed,
+        gender : finalGender,
       }
 
       const success = await updatePetApi(petId, requestBody);
@@ -203,7 +231,7 @@ function DogEdit(){
     //성별 설정
     const handleGenderSelect = (value:string) => {
       setSelectGender(value);
-      setValue('dogGender', value, { shouldValidate: true });
+      setValue('gender', value, { shouldValidate: true });
     }
 
 
@@ -230,9 +258,9 @@ function DogEdit(){
 
     //중성화 설정
     const handleNeuteringSelect = (value: string) => {
-      const numericValue = Number(value);
+      const booleanValue = value === '1';
       setSelectNeutering(value);
-      setValue('neuter', numericValue, {shouldValidate: true});
+      setValue('neuter', booleanValue, {shouldValidate: true});
     }
     
     const renderNeuteringButton = (label:string, value: string) => (
@@ -259,7 +287,7 @@ function DogEdit(){
     //날짜 확정
     const handleConfirm = (date:Date)=> {
       const formattedDate = formatDate(date, 'yyyy-MM-dd');
-      setValue('dogBirth', formattedDate, {shouldValidate:true});
+      setValue('birthdate', formattedDate, {shouldValidate:true});
       setVisible(false);
     }
     
@@ -271,7 +299,7 @@ function DogEdit(){
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="dogName"
+                name="petname"
                 render={({field: {onChange, value, onBlur}}) => (
                     <View>
                     <TextInput
@@ -282,7 +310,7 @@ function DogEdit(){
                         onChangeText={(value)=>onChange(value)}
                         autoCapitalize="none"
                     />
-                    {errors?.dogName?.message && <Text style={styles.error}>{String(errors.dogName.message)}</Text>}
+                    {errors?.petname?.message && <Text style={styles.error}>{String(errors.petname.message)}</Text>}
                 </View>
                 )}
                 rules={{required: '이름을 입력해주세요.'}}
@@ -292,7 +320,7 @@ function DogEdit(){
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="dogGender"
+                name="gender"
                 rules={{required: '성별을 선택해주세요.'}}
                 render={()=>(
                     <View>
@@ -300,7 +328,7 @@ function DogEdit(){
                         {renderButton('남', 'M')}
                         {renderButton('여', 'F')}
                     </View>
-                    {errors?.dogGender?.message && <Text style={styles.error}>{String(errors.dogGender.message)}</Text>}
+                    {errors?.gender?.message && <Text style={styles.error}>{String(errors.gender.message)}</Text>}
                     </View>
                 )}
                 />
@@ -326,7 +354,7 @@ function DogEdit(){
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="dogBirth"
+                name="birthdate"
                 rules={{required: '생년월일을 입력해주세요.'}}
                 render={()=>(
                     <View>
@@ -341,7 +369,7 @@ function DogEdit(){
                         value={dogBirthValue}
                         />
                     </TouchableOpacity>
-                    {errors?.dogBirth?.message && <Text style={styles.error}>{String(errors.dogBirth.message)}</Text>}
+                    {errors?.birthdate?.message && <Text style={styles.error}>{String(errors.birthdate.message)}</Text>}
                     </View>
                 )}
                 />
@@ -358,7 +386,7 @@ function DogEdit(){
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="dogBreed"
+                name="breed"
                 render={({field: {onChange, value, onBlur}}) => (
                     <View>
                     <TextInput
@@ -370,7 +398,7 @@ function DogEdit(){
                         autoCapitalize="none"
                         editable={false}
                     />
-                    {errors?.dogBreed?.message && <Text style={styles.error}>{String(errors.dogBreed.message)}</Text>}
+                    {errors?.breed?.message && <Text style={styles.error}>{String(errors.breed.message)}</Text>}
                 </View>
                 )}
                 rules={{required: '품종을 입력해주세요.'}}
@@ -381,7 +409,7 @@ function DogEdit(){
             <View style={styles.container}>
                 <Controller
                 control={control}
-                name="dogWeight"
+                name="weight"
                 render={({field: {onChange, value, onBlur}}) => (
                     <View>
                     <TextInput
@@ -392,7 +420,7 @@ function DogEdit(){
                         onChangeText={(value)=>onChange(value)}
                         keyboardType="number-pad"
                     />
-                    {errors?.dogWeight?.message && <Text style={styles.error}>{String(errors.dogWeight.message)}</Text>}
+                    {errors?.weight?.message && <Text style={styles.error}>{String(errors.weight.message)}</Text>}
                 </View>
                 )}
                 rules={{

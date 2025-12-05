@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mysite.test.DataNotFoundException;
 import com.mysite.test.member.Member;
-import com.mysite.test.member.MemberResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,34 +17,48 @@ import lombok.RequiredArgsConstructor;
 public class PetService {
 	private final PetRepository petRepository;
     private final BreedRepository breedRepository; 
+    
+    public PetDto getPetDetail(Integer petId){
+    	Pet pet = this.getPet(petId);
+    	
+    	return PetDto.builder()
+    			.petId(pet.getPetId())
+    			.petname(pet.getPetname())
+    			.breed(pet.getBreed().getBreedname())
+    			.gender(pet.getGender())
+    			.birthdate(pet.getBirthdate())
+    			.neuter(pet.getNeuter())
+    			.weight(pet.getWeight())
+    			.build();
+    }
 
-    @Transactional
-    private Breed findOrCreateBreed(String breedName) {
-        Optional<Breed> optionalBreed = breedRepository.findByBreedname(breedName);
-        
-        if (optionalBreed.isPresent()) {
-            return optionalBreed.get();
-        }
-        
-        Breed newBreed = new Breed();
-        newBreed.setBreedname(breedName);
-        return breedRepository.save(newBreed);
+    public List<Breed> getAllBreeds(){
+    	return breedRepository.findAll();
     }
     
-    public void create(Member owner, String name, String breed, String gender, 
-                       LocalDate birthDate, Integer neuter, Double weight) {
+    @Transactional
+    private Breed findBreed(String breedName) {
+        Optional<Breed> optionalBreed = breedRepository.findByBreedname(breedName);
+        
+        return optionalBreed.get();
+    }
+    
+    
+    @Transactional
+    public void create(Member owner, String petname, String breed, String gender, 
+                       LocalDate birthdate, Boolean neuter, Double weight) {
                        
-        Breed breedEntity = findOrCreateBreed(breed);
-        Boolean isNeuter = neuter != null && neuter == 1;
+        Breed breedEntity = findBreed(breed);
       
         Pet pet = new Pet();
         pet.setOwner(owner);
         pet.setBreed(breedEntity);
-        pet.setPetname(name);
+        pet.setPetname(petname);
         pet.setGender(gender);
-        pet.setBirthdate(birthDate);
-        pet.setNeuter(isNeuter);
+        pet.setBirthdate(birthdate);
+        pet.setNeuter(neuter);
         pet.setWeight(weight);
+        
         this.petRepository.save(pet);
     }
     
@@ -68,25 +81,69 @@ public class PetService {
     }
     
     
-    // 수정 기능
+//     수정 기능
     @Transactional
-    public void updatePetInfo(Pet pet, PetUpdateForm petUpdateForm) {
-    	if(petUpdateForm.getPetname() != null && !pet.getPetname().equals(petUpdateForm.getPetname())) {
-    		pet.setPetname(petUpdateForm.getPetname());
-        }
+    public Pet update(Pet pet, String petname, LocalDate birthdate, Boolean neuter, Double weight, String breed, String gender) {
+    	Breed breedEntity = findBreed(breed);
+    	
+    	pet.setPetname(petname);
+        pet.setBirthdate(birthdate);
+        pet.setNeuter(neuter);
+        pet.setWeight(weight);
+        pet.setBreed(breedEntity);
+        pet.setGender(gender);
         
-        if(petUpdateForm.getBirthDate() != null && !pet.getBirthdate().isEqual(petUpdateForm.getBirthDate())) {
-        	pet.setBirthdate(petUpdateForm.getBirthDate());
-        }
-        
-        if(petUpdateForm.getNeuter() != null && pet.getNeuter() != petUpdateForm.getNeuter()) {
-        	pet.setNeuter(petUpdateForm.getNeuter());
-        }
-        
-        if(petUpdateForm.getWeight() != null && pet.getWeight() != petUpdateForm.getWeight()) {
-        	pet.setWeight(petUpdateForm.getWeight());
-        }
+        return this.petRepository.save(pet);
     }
+    
+//    @Transactional
+//    public Pet updatePetInfo(Pet pet, Map<String, Object> requestMap) {
+//    	if (requestMap.containsKey("petname")) {
+//            String newName = (String) requestMap.get("petname");
+//            if (newName != null && !newName.isBlank()) {
+//                pet.setPetname(newName);
+//            } else {
+//                throw new IllegalArgumentException("이름은 필수 항목이며 비워둘 수 없습니다.");
+//            }
+//        }
+//    	if (requestMap.containsKey("birthDate")) {
+//            String dateString = (String) requestMap.get("birthDate");
+//            try {
+//                LocalDate newBirthDate = LocalDate.parse(dateString);
+//                if (newBirthDate.isAfter(LocalDate.now())) {
+//                    throw new IllegalArgumentException("생년월일은 미래 날짜일 수 없습니다.");
+//                }
+//                pet.setBirthDate(newBirthDate);
+//            } catch (Exception e) {
+//                 throw new IllegalArgumentException("유효하지 않은 생년월일 형식입니다. (YYYY-MM-DD)");
+//            }
+//        }
+//    	if (requestMap.containsKey("neuter")) {
+//            Boolean newNeuter = (Boolean) requestMap.get("neuter");
+//            if (newNeuter != null) {
+//                pet.setNeuter(newNeuter);
+//            } else {
+//                throw new IllegalArgumentException("중성화 여부는 필수 항목입니다.");
+//            }
+//        }
+//    	if (requestMap.containsKey("weight")) {
+//            Number weightNumber = (Number) requestMap.get("weight");
+//            if (weightNumber != null) {
+//                Double newWeight = weightNumber.doubleValue();
+//                if (newWeight < 0.1) {
+//                    throw new IllegalArgumentException("몸무게는 0.1 kg 이상이어야 합니다.");
+//                }
+//                pet.setWeight(newWeight);
+//            } else {
+//                 throw new IllegalArgumentException("몸무게는 필수 항목입니다.");
+//            }
+//        }
+//    	return this.petRepository.save(pet);
+//    }
+    
+    
+    
+    
 //    public void updateName(Pet pet, String newName) {
 //    	pet.setPetname(newName);
 //    }
@@ -124,19 +181,5 @@ public class PetService {
     // 삭제 기능
     public void delete(Pet pet) {
         this.petRepository.delete(pet);
-    }
-    
-    public MemberResponseDto.PetDto getPetDetail(Integer petId){
-    	Pet pet = this.getPet(petId);
-    	
-    	return MemberResponseDto.PetDto.builder()
-    			.petId(pet.getPetId())
-    			.name(pet.getPetname())
-    			.breed(pet.getBreed().getBreedname())
-    			.gender(pet.getGender())
-    			.birthDate(pet.getBirthdate())
-    			.neuter(pet.getNeuter())
-    			.weight(pet.getWeight())
-    			.build();
     }
 }

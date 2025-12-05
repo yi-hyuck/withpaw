@@ -80,9 +80,6 @@ function SignUp (){
   const [seePw, setSeePw] = useState(false);
   const [seePwChk, setSeePwChk] = useState(false);
 
-
-
-
   return(
     <KeyboardAwareScrollView>
       <Text style={[styles.title, {marginTop:50}]}>아이디</Text>
@@ -133,7 +130,15 @@ function SignUp (){
               {errors?.password?.message && <Text style={styles.error}>{String(errors.password.message)}</Text>}
             </View>
           )}
-          rules={{required: '비밀번호를 입력해주세요.'}}
+          rules={{
+            validate: (value) => {
+              const pattern = /.{4,}/;
+              if(!pattern.test(value)){
+                  return "비밀번호는 4자 이상이어야 합니다.";
+              }
+              return true;
+            }
+          }}
         />
       </View>
       <Text style={[styles.title, {marginTop:20}]}>비밀번호 확인</Text>
@@ -144,7 +149,7 @@ function SignUp (){
           render={({field: {onChange, value, onBlur}}) => (
             <View>
               <TextInput
-                placeholder="비밀번호 입력"
+                placeholder="비밀번호 확인"
                 mode="outlined"
                 outlineStyle={styles.inputOutline}
                 style={styles.input}
@@ -161,7 +166,7 @@ function SignUp (){
               {errors?.passwordChk?.message && <Text style={styles.error}>{String(errors.passwordChk.message)}</Text>}
             </View>
           )}
-          rules={{required: '비밀번호를 확인해주세요.'}}
+          rules={{required: '비밀번호를 입력해주세요.'}}
         />
       </View>
       <Text style={[styles.title, {marginTop:20}]}>이메일</Text>

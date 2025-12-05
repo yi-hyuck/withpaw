@@ -125,7 +125,7 @@ public class MemberController {
         // 반려동물 이름이 비어 있으면 에러 처리
         boolean noValidPets = memberSignupPetDto.getPets() == null
                 || memberSignupPetDto.getPets().isEmpty()
-                || memberSignupPetDto.getPets().stream().allMatch(p -> p.getName().isBlank());
+                || memberSignupPetDto.getPets().stream().allMatch(p -> p.getPetname().isBlank());
 
         if (noValidPets) {
         	Map<String, String> errors = new HashMap<>();

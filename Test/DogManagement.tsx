@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, Alert} from 'react-native';
 import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FlatList, GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer, useRoute } from '@react-navigation/native';
+import { NavigationContainer, useRoute, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
+import { useAuth } from './useAuth';
 
 import { RootStackParamList } from './types';
 
@@ -17,15 +18,8 @@ type DogMgmtScreenProps = NativeStackScreenProps<RootStackParamList,"DogManageme
 
 const API_URL = 'http://10.0.2.2:8090/pet';
 
-const fetchInfoApi = async () => {
+const fetchInfoApi = async (token: string) => {
     try{
-        const token = await AsyncStorage.getItem('userToken');
-
-        if(!token){
-            console.error("토큰 없음");
-            return null;
-        }
-
         const response = await axios.get(`${API_URL}/manage`, {
             headers: {
                 'Authorization' : `Bearer ${token}`
@@ -34,18 +28,25 @@ const fetchInfoApi = async () => {
 
         return response.data;
     } catch (error){
-        console.error("오류");
-        return null;
+        if (axios.isAxiosError(error) && error.response) {
+            console.error(
+                "API 요청 오류:", 
+                error.response.status, 
+                error.response.data
+            );
+        } else {
+            console.error("네트워크 또는 기타 오류:", error);
+        }
     }
 }
 
 //타입 정의
 interface PetDto{
     petId: number;
-    name: string,
+    petname: string,
     breed: string;
     gender: string;
-    birthDate: string;
+    birthdate: string;
     neuter: boolean;
     weight: number;
 }
@@ -56,50 +57,6 @@ interface userType {
     password: string;
     pets: PetDto[];
 }
-
-// interface DogItem{
-//     id: string;
-//     name: string;
-//     dogName: string;
-//     birth: string;
-//     breed: string;
-//     gender: string;
-//     weight: string;
-//     neutering: string;
-// }
-
-// const DogTemporaryData: DogItem[] = [
-//     {
-//         id: 'd1',
-//         name: '몽실',
-//         breed: '말티즈',
-//         birth: '2015-06-13',
-//         gender: 'male',
-//         weight: '3',
-//         neutering: 'yes',
-//         dogName: '몽실',
-//     },
-//     {
-//         id: 'd2',
-//         name: '너티',
-//         breed: '테리어',
-//         birth: '2020-01-01',
-//         gender: 'male',
-//         weight: '5',
-//         neutering: 'yes',
-//         dogName: '너티',
-//     },
-//     {
-//         id: 'd3',
-//         name: '메리',
-//         breed: '시고르자브종',
-//         birth: '2020-01-01',
-//         gender: 'male',
-//         weight: '5',
-//         neutering: 'yes',
-//         dogName: '메리',
-//     }
-// ];
 
 //헤더 바 관련
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -164,7 +121,7 @@ interface DogItemProps extends PetDto {
 
 
 //강아지 카드 관리
-const DogItems = ({petId, name, breed, birthDate, mode, onEdit, onSelect, isSelect}:DogItemProps)=>{
+const DogItems = ({petId, petname, breed, birthdate, mode, onEdit, onSelect, isSelect}:DogItemProps)=>{
     const Age = (birthDay: string) => {
         // const separator = birthDay.includes('/') ? '/' : '-';
         // const parts = birthDay.split(separator);
@@ -193,7 +150,7 @@ const DogItems = ({petId, name, breed, birthDate, mode, onEdit, onSelect, isSele
         return age >= 0 ? `${age}` : '0';
     }
 
-    const displayAge = Age(birthDate);
+    const displayAge = Age(birthdate);
 
 
     const handlePress = () =>{
@@ -220,7 +177,7 @@ const DogItems = ({petId, name, breed, birthDate, mode, onEdit, onSelect, isSele
             )}
             <View style={styles.CardContainer}>
                 <View style={styles.CardContent}>
-                    <Text style={styles.cardTitle}>{name}</Text>
+                    <Text style={styles.cardTitle}>{petname}</Text>
                     <Text style={styles.cardData}>{displayAge}살</Text>
                     <Text style={styles.cardData}>{breed}</Text>
                 </View>
@@ -293,34 +250,52 @@ const ActionButton = ({mode, setMode, onAdd, onDelete, selectCount}:ActionButton
 
 //관리 화면
 function DogManagement({navigation, route}:DogMgmtScreenProps){
+    const {authToken, isAuthenticated} = useAuth();
     const [dogData, setDogData] = useState<PetDto[]>([]);
     const [mode, setMode] = useState<'none' | 'edit' | 'delete'>('none');
     const [selectIds, setSelectIds] = useState<number[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const loadPetInfo = useCallback(async () => {
+        if(!isAuthenticated || !authToken){
+            setIsLoading(false);
+            setDogData([]);
+            return;
+        }
+
         setIsLoading(true);
-        const data = await fetchInfoApi();
+        const data = await fetchInfoApi(authToken);
         if(data && data.pets){
             setDogData(data.pets);
         }else{
             setDogData([]);
         }
         setIsLoading(false);
-    },[]);
+    },[authToken, isAuthenticated]);
 
     useEffect(()=>{
         loadPetInfo();
     },[loadPetInfo]);
 
-    useEffect(()=>{
-        //새로운 강아지 추가
-        if(route.params?.newDog || route.params?.updatedDog){
+    useFocusEffect(
+        useCallback(() => {
             loadPetInfo();
-            navigation.setParams({newDog: undefined, updatedDog: undefined});
-            setMode('none'); 
-        }
-    }, [route.params?.newDog, route.params?.updatedDog, navigation]);
+            setMode('none');
+
+            return () => {
+
+            };
+        }, [loadPetInfo])
+    );
+
+    // useEffect(()=>{
+    //     //새로운 강아지 추가
+    //     if(route.params?.refresh){
+    //         loadPetInfo();
+    //         navigation.setParams({refresh: undefined});
+    //         setMode('none'); 
+    //     }
+    // }, [route.params?.refresh, navigation, loadPetInfo]);
 
 
     const handleEdit = (petId: number) => {
@@ -334,14 +309,13 @@ function DogManagement({navigation, route}:DogMgmtScreenProps){
 
     const deletePetApi = async (petId: number) => {
         try{
-            const token = await AsyncStorage.getItem('userToken');
-            if(!token){
+            if(!authToken){
                 console.error("토큰 없음");
                 return false;
             }
 
             await axios.delete(`${API_URL}/delete/${petId}`, {
-                headers: {'Authorization' : `Bearer ${token}`}
+                headers: {'Authorization' : `Bearer ${authToken}`}
             });
             return true;
         } catch (error){

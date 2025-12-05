@@ -1,14 +1,12 @@
 package com.mysite.test.member;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import lombok.AllArgsConstructor;
+import com.mysite.test.pet.PetDto;
+
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
 @Builder
@@ -24,10 +22,10 @@ public class MemberResponseDto {
         List<PetDto> petDtos = member.getPets().stream()
             .map(pet -> PetDto.builder()
                 .petId(pet.getPetId())
-                .name(pet.getPetname())
+                .petname(pet.getPetname())
                 .breed(pet.getBreed().getBreedname()) // Breed 엔티티에서 이름 가져오기
                 .gender(pet.getGender())
-                .birthDate(pet.getBirthdate())
+                .birthdate(pet.getBirthdate())
                 .neuter(pet.getNeuter())
                 .weight(pet.getWeight())
                 .build())
@@ -42,18 +40,18 @@ public class MemberResponseDto {
     }
     
     // 반려동물 정보를 담기 위한 내부 DTO
-    @Getter
-    @Setter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PetDto {
-        private Integer petId;
-        private String name; 
-        private String breed; // 품종 이름
-        private String gender;
-        private LocalDate birthDate;
-        private Boolean neuter;
-        private Double weight;
-    }
+//    @Getter
+//    @Setter
+//    @Builder
+//    @NoArgsConstructor
+//    @AllArgsConstructor
+//    public static class PetDto {
+//        private Integer petId;
+//        private String name; 
+//        private String breed; // 품종 이름
+//        private String gender;
+//        private LocalDate birthDate;
+//        private Boolean neuter;
+//        private Double weight;
+//    }
 }

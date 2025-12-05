@@ -8,13 +8,15 @@
 import React from 'react';
 //import { NewAppScreen } from '@react-native/new-app-screen';
 //import { useState } from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity} from 'react-native';
+import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, ActivityIndicator} from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { MemberProvider, useMember } from './MemberProvider';
+import { AuthProvider } from './AuthProvider';
+import { useAuth } from './useAuth';
 //import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Login from './Login';
@@ -33,18 +35,20 @@ type Props = {
 };
 
 function NaviContainer(){
+  const {isAuthenticated, isLoadingToken} = useAuth();
   const {memberInfo} = useMember();
 
-  // if(isLoading) {
-  //   return (
-  //     <View style={{flex:1, justifyContent: 'center', alignItems: 'center'}}>
-  //       <Text>회원 정보 로딩중</Text>
-  //     </View>
-  //   )
-  // }
+  if(isLoadingToken) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FFBB00" />
+        <Text style={styles.loadingText}>인증 정보 확인 중...</Text>
+      </View>
+    )
+  }
 
   return (
-    <Stack.Navigator initialRouteName={memberInfo ? 'NaviBar' : 'Home'}>
+    <Stack.Navigator initialRouteName={isAuthenticated ? 'NaviBar' : 'Home'}>
       <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}}/>
       <Stack.Screen name="Login" component={Login}/>
       <Stack.Screen name="SignUp" component={SignUp_Screen} options={{headerShown: false}}/>
@@ -57,9 +61,11 @@ function App() {
   return (
     <SafeAreaProvider>
       <MemberProvider>
-        <NavigationContainer>
-          <NaviContainer/>
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer>
+            <NaviContainer/>
+          </NavigationContainer>
+        </AuthProvider>
       </MemberProvider>
     </SafeAreaProvider>
   );
@@ -67,8 +73,6 @@ function App() {
 
 //실제 홈 화면
 function HomeScreen({navigation}: Props) {
-  const safeAreaInsets = useSafeAreaInsets();
-
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -102,6 +106,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#ffffffff',
     fontWeight:'bold',
+  },
+  loadingContainer: { 
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#444',
   },
   
 });

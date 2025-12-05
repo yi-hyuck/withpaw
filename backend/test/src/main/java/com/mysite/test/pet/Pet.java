@@ -1,12 +1,9 @@
 package com.mysite.test.pet;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import com.mysite.test.member.Member;
-import com.mysite.test.symptom.Symptom;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,7 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,11 +23,11 @@ public class Pet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer petId; 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private Member owner; 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "breed_id", nullable = false)
     private Breed breed; 
 
@@ -48,10 +44,6 @@ public class Pet {
     private Boolean neuter; 
 
     @Column(columnDefinition = "DECIMAL(5, 2)", nullable = false)
-    private Double weight; 
-
-    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL)
-    private List<Symptom> symptoms;
-	
+    private Double weight;
 
 }

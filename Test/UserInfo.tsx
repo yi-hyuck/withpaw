@@ -9,30 +9,10 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { TextInput, } from "react-native-paper";
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMember } from './MemberProvider';
+import { useAuth } from './useAuth';
 
 const API_URL = 'http://10.0.2.2:8090';
-
-const fetchMemberInfoApi = async () => {
-    try{
-        const token = await AsyncStorage.getItem('userToken');
-
-        if(!token){
-            console.error("토큰 없음");
-            return null;
-        }
-
-        const response = await axios.get(`${API_URL}/member/info`, {
-            headers: {
-                'Authorization' : `Bearer ${token}`
-            }
-        });
-
-        return response.data;
-    } catch (error){
-        console.error("오류");
-        return null;
-    }
-}
 
 const editMemberInfoApi = async (payload: any) => {
     try{
@@ -364,32 +344,21 @@ function UserEdit({navigation, route}: userEditScreenProps){
 
 //관리 화면
 function UserInfo({navigation}: userInfoScreenProps){
-    const [userData, setUserData] = useState<userType|null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const loadUserInfo = useCallback(async () => {
-        setIsLoading(true);
-        const data = await fetchMemberInfoApi();
-        if(data){
-            setUserData(data);
-        }else{
-            setUserData(null);
-        }
-        setIsLoading(false);
-    }, []);
-
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', ()=>{
-            loadUserInfo();
-        });
-        return unsubscribe;
-    }, [navigation, loadUserInfo]);
-
+    const {memberInfo: userData, isLoading, fetchMemberInfo} = useMember();
+    const {removeToken} = useAuth();
 
     //백엔드 api 호출
-    const handleSave = () => {
-        loadUserInfo();
-    }
+    const handleSave = useCallback( async () => {
+        const token = await AsyncStorage.getItem('userToken');
+
+        if(!token){
+            console.error("정보 없음");
+            return null;
+        }
+
+        fetchMemberInfo(token);
+
+    }, [fetchMemberInfo])
 
     const UserDelete = () => {
         Alert.alert(
@@ -404,7 +373,7 @@ function UserInfo({navigation}: userInfoScreenProps){
                                 headers: {'Authorization' : `Bearer ${token}`}
                             });
 
-                            await AsyncStorage.removeItem('userToken');
+                            await removeToken();
 
                             const rootStack = navigation.getParent()?.getParent();
 

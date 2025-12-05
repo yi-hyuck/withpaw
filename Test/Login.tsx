@@ -6,11 +6,14 @@ import { RootStackParamList } from './types';
 import { useNavigation } from "@react-navigation/native";
 import { useMember } from "./MemberProvider";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./useAuth";
 
 import Maps from './Maps';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 function Login() {
+  const {saveToken} = useAuth();
   const {fetchMemberInfo} = useMember();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +71,12 @@ function Login() {
     setLoading(true);
     setError(null);
 
-    const payload = {
-      username: values.userid, 
-      password: values.password,
-    };
+    // const payload = {
+    //   username: values.userid, 
+    //   password: values.password,
+    // };
 
-    console.log("RN Sending Payload:", payload);
+    // console.log("RN Sending Payload:", payload);
 
     try{
       const response = await axios.post('http://10.0.2.2:8090/member/login',
@@ -91,7 +94,8 @@ function Login() {
         const token = response.data.token;
 
         await AsyncStorage.setItem('userToken', token);
-        await fetchMemberInfo();
+        await saveToken(token);
+        await fetchMemberInfo(token);
         navigation.reset({index:0, routes:[{name:'NaviBar'}]});
         
         // navigation.navigate('NaviBar');
@@ -104,7 +108,7 @@ function Login() {
   }
 
   return(
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <TextInput
         style={[styles.input, {marginTop:60}]}
         onChangeText={(text)=>handleChangeText('userid',text)}
@@ -124,7 +128,7 @@ function Login() {
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, {marginTop: 30}]}
         onPress={loginHandler}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
@@ -144,10 +148,12 @@ const styles = StyleSheet.create({
   input:{
     width:350,
     height:45,
-    borderColor: '#444444ff',
-    borderWidth: 1,
+    borderColor: '#a5a5a5ff',
+    borderWidth: 2,
     paddingLeft:10,
     marginBottom:20,
+    borderRadius: 7,
+    backgroundColor: '#ffffffff',
   },
   button: {
     backgroundColor: '#ffd000ff',
@@ -157,6 +163,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 20,
+    fontWeight: 'bold',
     color: '#ffffffff'
   },
   errorText: {

@@ -1,5 +1,6 @@
 package com.mysite.test.member;
 
+import java.security.Principal;
 import java.util.Optional;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,7 +22,7 @@ public class MemberService {
     
     @Transactional
     public void createMemberAndPets(MemberSignupPetDto dto) throws Exception {
-      
+    	
         if (memberRepository.findByLoginId(dto.getLoginId()).isPresent()) {
             throw new IllegalStateException("이미 존재하는 사용자 ID입니다.");
         }
@@ -34,16 +35,17 @@ public class MemberService {
         member.setPassword(passwordEncoder.encode(dto.getPassword())); 
         member.setEmail(dto.getEmail());
 //        member.setRole(MemberRole.MEMBER);
-        this.memberRepository.save(member);
+//        this.memberRepository.save(member);
+        Member persistedMember = this.memberRepository.save(member);
         
         if (dto.getPets() != null && !dto.getPets().isEmpty()) {
             for (PetForm petForm : dto.getPets()) {
                 petService.create(
-                    member, 
-                    petForm.getName(),
+                	persistedMember,
+                    petForm.getPetname(),
                     petForm.getBreed(),
                     petForm.getGender(),
-                    petForm.getBirthDate(),
+                    petForm.getBirthdate(),
                     petForm.getNeuter(),
                     petForm.getWeight()
                 );

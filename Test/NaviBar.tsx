@@ -16,6 +16,8 @@ import UserInfoScreen from './UserInfo';
 import DogMgmtScreen from './DogManagement';
 import App from './App';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./useAuth";
+import axios from "axios";
 
 
 const Tab = createBottomTabNavigator();
@@ -164,42 +166,25 @@ function TabNaviBar() {
 }
 
 function CustomDrawerContent(props:any){
-  const {setMemberInfo} = useMember();
+  // const {setMemberInfo} = useMember();
+  const {removeToken} = useAuth();
 
   //로그아웃
   const handleLogout = async () => {
     try{
-      const token = await AsyncStorage.getItem('userToken');
+      await removeToken();
 
-      const response = await fetch('http://10.0.2.2:8090/member/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization' : `Bearer ${token}`
-        },
-      });
+      
 
-      if(response.ok || response.status === 200 || response.status === 302 || response.status === 204){
-        setMemberInfo(null);
-        
-        if(token){
-          await AsyncStorage.removeItem('userToken');
+      const naviBarStack = props.navigation.getParent();
+      if(naviBarStack){
+        const rootStack = naviBarStack.getParent();
+        if(rootStack && rootStack.reset){
+          rootStack.reset({
+            index: 0,
+            routes: [{name: 'Home'}]
+          })
         }
-
-        setMemberInfo(null);
-
-        const naviBarStack = props.navigation.getParent();
-        if(naviBarStack){
-          const rootStack = naviBarStack.getParent();
-          if(rootStack && rootStack.reset){
-            rootStack.reset({
-              index: 0,
-              routes: [{name: 'Home'}]
-            })
-          }
-        }
-      } else {
-        console.error("Logout failed", response.status);
       }
 
     } catch (error){
