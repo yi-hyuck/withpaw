@@ -277,15 +277,13 @@ DROP TABLE IF EXISTS `symptom`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `symptom` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `description` varchar(255) DEFAULT NULL,
-  `symptom_date` datetime(6) DEFAULT NULL,
   `created_at` datetime(6) DEFAULT NULL,
+  `description` text,
   `member_id` bigint NOT NULL,
-  `pet_id` bigint NOT NULL,
-  `selected_symptom_ids` varchar(255) DEFAULT NULL,
-  `suspected_disease_ids` varchar(255) DEFAULT NULL,
+  `symptom_date` datetime(6) DEFAULT NULL,
+  `title` varchar(200) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -294,8 +292,10 @@ CREATE TABLE `symptom` (
 
 LOCK TABLES `symptom` WRITE;
 /*!40000 ALTER TABLE `symptom` DISABLE KEYS */;
+INSERT INTO `symptom` VALUES (1,'2025-11-21 17:07:09.232329','구토 후 식욕이 떨어짐',1,'2025-12-01 10:00:00.000000','구토 + 식욕 저하'),(2,'2025-11-24 09:51:12.059402','사료 섭취 뒤 구토. 물도 못마심',1,'2025-11-24 15:30:00.000000','강아지'),(3,'2025-11-24 14:03:43.992015','사료 섭취 뒤 구토. 물도 못마심',1,'2025-11-24 15:30:00.000000','강아지'),(4,'2025-11-27 15:56:27.031705','아침에 한 번 구토',1,'2025-12-01 09:00:00.000000','구토'),(5,'2025-12-02 15:37:13.956205','아침에 111한 번 구토',1,'2025-12-01 09:00:00.000000','ㅇㅇㅇㅇ55'),(7,'2025-12-02 15:42:26.174144','아침에 한 번 구토',1,'2025-12-01 14:30:00.000000','구토');
 /*!40000 ALTER TABLE `symptom` ENABLE KEYS */;
 UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 --
 -- Table structure for table `toxic_food`
