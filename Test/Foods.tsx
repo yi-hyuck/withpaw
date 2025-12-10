@@ -5,26 +5,15 @@ import { NativeStackNavigationProp, createNativeStackNavigator } from "@react-na
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
 import type { RootStackParamList } from "./types";
+import axios from 'axios';
 
 import FoodDetail from './FoodDetail';
 
-//임시 타입 지정
 type FoodItem = {
-  id: string;
+  id: number;
   name: string;
-}
 
-//임시 데이터
-const ALL_FOODS_DATA = [
-  { id: '1', name: '김치찌개' },
-  { id: '2', name: '김치' },
-  { id: '3', name: '돼지고기' },
-  { id: '4', name: '소고기' },
-  { id: '5', name: '배추' },
-  { id: '6', name: '양상추' },
-  { id: '7', name: '멸치 조림' },
-  { id: '8', name: '장조림' },
-];
+}
 
 //헤더바
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -102,29 +91,42 @@ function Foods() {
 
   const [searchText, setSearchText] = useState('');
 
+  const [allFoods, setAllFoods] = useState<FoodItem[]>([]);
   const [filteredFoodList, setFilteredFoodList] = useState<FoodItem[]>([]);
+
+// 데이터 가져오기
+  useEffect(() => {
+    fetchFoods();
+  }, []);
+
+  const fetchFoods = async () => {
+    try {
+      const response = await axios.get('http://10.0.2.2:8090/api/foods');
+      setAllFoods(response.data);
+      setFilteredFoodList(response.data);
+    } catch (error) {
+      console.error("데이터 가져오기 실패:", error);
+    }
+  }
+
 
 // 검색 필터링
   useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredFoodList(allFoods); // 검색어 없으면 전체 목록
 
-      if(searchText.trim() === '') {
+    } else {
+      const filteredResults = allFoods.filter(food => 
+        food.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredFoodList(filteredResults);
+    }
+  }, [searchText, allFoods]);
 
-        setFilteredFoodList([]);
-
-      }
-      else {
-
-        const filteredResults = ALL_FOODS_DATA.filter(food => food.name.toLowerCase().includes(searchText.toLowerCase()));
-        setFilteredFoodList(filteredResults);
-
-      }
-
-      }, [searchText]);
-
-      // 음식 클릭시 이동 함수
-      const handlePressFood = (item: FoodItem) => {
-        navigation.navigate('FoodDetail', {foodId: item.id});
-      };
+  const handlePressFood = (item: FoodItem) => {
+    // ID를 문자열로 변환해서 전달
+    navigation.navigate('FoodDetail', { foodId: String(item.id) });
+  };
 
       const renderFoodItem = ({item}: {item: FoodItem}) => (
         
@@ -148,7 +150,7 @@ function Foods() {
       <FlatList
         data={filteredFoodList}
         renderItem={renderFoodItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         style={styles.list}
       />
     </View>
