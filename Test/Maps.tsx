@@ -6,6 +6,14 @@ import Config from "react-native-config";
 
 const GOOGLE_API_KEY = Config.GOOGLE_MAPS_API_KEY;
 
+const removeCountry = (address?: string) => {
+    if (!address) return "";
+
+    return address
+      .replace(/^(대한민국|South Korea|Republic of Korea)[\s,]*/i, "")
+      .trim();
+  };
+
 interface Place {
   displayName?: {
     text: string;
@@ -75,10 +83,12 @@ function Maps() {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': GOOGLE_API_KEY,
           'X-Goog-FieldMask': 'places.displayName,places.location,places.formattedAddress',
+          'Accept-Language': 'ko',
         },
         body: JSON.stringify({
           includedTypes: ['veterinary_care'],
           maxResultCount: 10, // 검색결과 최대 갯수
+          languageCode: 'ko',
           locationRestriction: {
             circle: {
               center: { latitude, longitude },
@@ -154,7 +164,7 @@ function Maps() {
               longitude: place.location.longitude,
             }}
             title={place.displayName?.text}
-            description={place.formattedAddress}
+            description={removeCountry(place.formattedAddress)}
           />
         ))}
       </MapView>
