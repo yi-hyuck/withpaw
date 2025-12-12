@@ -1,0 +1,63 @@
+<html layout:decorate="~{layout}">
+<div layout:fragment="content" class="container my-3">
+    <h2 class="border-bottom py-2">회원정보 관리</h2>
+
+    <div th:if="${param.success == 'update'}" class="alert alert-success mt-3" role="alert">
+        정보 수정이 성공적으로 완료되었습니다.
+    </div>
+
+    <form th:action="@{/member/update}" method="post" th:object="${memberUpdateForm}">
+        
+        <div class="mb-3">
+            <label for="loginId" class="form-label">사용자 ID</label>
+            <input type="text" id="loginId" th:value="${member.loginId}" class="form-control" readonly>
+        </div>
+        
+        <div class="mb-3">
+            <label for="email" class="form-label">이메일</label>
+            <input type="email" th:field="*{email}" class="form-control" 
+                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="invalid-feedback"></div>
+        </div>
+
+        <h4 class="mt-5">비밀번호 변경</h4>
+        
+        <div class="mb-3">
+            <label for="currentPassword" class="form-label">현재 비밀번호</label>
+            <input type="password" th:field="*{currentPassword}" class="form-control" 
+                   th:classappend="${#fields.hasErrors('currentPassword')} ? 'is-invalid'">
+            <div th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}" class="invalid-feedback"></div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="newPassword" class="form-label">새 비밀번호</label>
+            <input type="password" th:field="*{newPassword}" class="form-control" 
+                   th:classappend="${#fields.hasErrors('newPassword')} ? 'is-invalid'">
+            <div th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}" class="invalid-feedback"></div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인</label>
+            <input type="password" th:field="*{newPasswordConfirm}" class="form-control" 
+                   th:classappend="${#fields.hasErrors('newPasswordConfirm')} ? 'is-invalid'">
+            <div th:if="${#fields.hasErrors('newPasswordConfirm')}" th:errors="*{newPasswordConfirm}" class="invalid-feedback"></div>
+        </div>
+		
+		<div class="mb-3">
+			<button id="deleteBtn" type="button" class="btn btn-danger">탈퇴하기</button>
+		            
+		   	<button type="submit" class="btn btn-primary">수정하기</button>
+		</div>
+	</form>
+    
+    <form th:action="@{/member/delete}" method="post" id="deleteForm" style="display: none;"></form>
+    
+    <script>
+        document.getElementById('deleteBtn').addEventListener('click', function() {
+            if (confirm('정말로 회원 탈퇴하시겠습니까? 모든 정보가 삭제됩니다.')) {
+                document.getElementById('deleteForm').submit();
+            }
+        });
+    </script>
+</div>
+</html>
