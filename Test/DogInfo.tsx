@@ -225,8 +225,11 @@ function DogInfo(){
 
 
     return (
-      <KeyboardAwareScrollView>
-        <Text style={[styles.title, {marginTop:40}]}>이름</Text>
+      <KeyboardAwareScrollView style={{backgroundColor:'#fff3dcff'}}>
+        <View style={styles.container}>
+          <Text style={[styles.title2]}>반려동물 정보 입력</Text>
+        </View>
+        <Text style={[styles.title, {marginTop:60}]}>이름</Text>
         <View style={styles.container}>
           <Controller
             control={control}
@@ -402,7 +405,7 @@ function DogInfo(){
           <Pressable 
             style={[styles.button,
             {marginTop:50},
-            {backgroundColor: isLoading ? '#f3f3f3ff' : '#ffbb00ff'}]}
+            {backgroundColor: isLoading ? '#f3f3f3ff' : '#ffc268ff'}]}
             onPress={handleSubmit(onSubmit)}
             // disabled={isLoading}
           >
@@ -460,7 +463,7 @@ const styles = StyleSheet.create({
     alignItems:'center',
     justifyContent: 'space-between',
     backgroundColor:'#ffffffff',
-    borderColor:'#ffc400ff',
+    borderColor:'#ffc64aff',
     borderWidth: 1,
     borderRadius: 5,
     marginHorizontal: 15,
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
   },
   selectButton:{
     borderColor:'#ffc400ff',
-    backgroundColor:'#ffc400ff',
+    backgroundColor:'#ffc64aff',
   },
   buttonText2:{
     fontSize:18,
@@ -540,6 +543,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffffff',
     paddingLeft: 10,
     marginBottom: 10,
+  },
+  title2:{
+    fontSize:22,
+    fontWeight:'bold',
+    color: '#7e4700ff',
+    marginTop: 60,
   }
 });
 

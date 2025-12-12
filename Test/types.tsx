@@ -1,7 +1,9 @@
 interface Note {
-  id: string;
+  id: number;
   title: string;
-  data: string;
+  description: string;
+  symptomDate: string;
+  createdAt: string;
 }
 
 interface Schedule {
@@ -49,16 +51,10 @@ export type RootStackParamList={
   Disease: undefined;
   DogAi: undefined;
   DogNoteScreen: undefined;
-  DogNote: undefined;
   DogNotePlus: {
     saveNote: (title: string, data: string, id?: string) => void;
     initialNote?: Note;
     onSaveAndGoBackToDogNote?: () => void;
-  };
-  NoteDetail: { 
-    note: Note;
-    deleteNote: (id: string) => void;
-    navigateToEdit: (note: Note) => void;
   };
   Calender: undefined;
   CalendarScreen: undefined;
@@ -79,4 +75,24 @@ export type RootStackParamList={
   Logout: undefined;
   App: undefined;
   UserEdit: {currentData: {loginId: string; email:string; password:string;}|null; onSave:()=>void};
+  DogNote: undefined;
+  DogNoteList: {
+    notes: Note[];
+    deleteNote: (id: number) => void;
+    navigateToEdit: (note: Note) => void;
+    isLoading: boolean;
+    fetchNotes: () => void;
+  };
+  AddNote: {
+    saveNote: (title: string, description: string, symptomDate: string, id?: number) => Promise<boolean>;
+  };
+  EditNote: {
+    note: Note;
+    saveNote: (title: string, description: string, symptomDate: string, id?: number) => Promise<boolean>;
+  };
+  NoteDetail: {
+    note: Note;
+    navigateToEdit: (note: Note) => void;
+    deleteNote: (id: number) => void;
+  };
 };

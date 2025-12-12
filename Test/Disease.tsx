@@ -9,6 +9,7 @@ import { RootStackParamList } from "./types";
 
 import DogNoteScreen from './DogNote';
 import DogAi from './DogAi';
+import { processFontWeight } from "react-native-reanimated/lib/typescript/css/native";
 
 //스텍 화면 관련
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,7 +33,7 @@ const CustomTitle = ({ title }:CustomTitleProps) => {
 
 const HEADER_STYLE = {
     height: 55,
-    backgroundColor: '#ffd651ff',
+    backgroundColor: '#ffcf88ff',
 };
 
 //드로어바 관련
@@ -67,7 +68,13 @@ function Disease() {
                     })}
         />
       <Stack.Screen name="DogNoteScreen" component={DogNoteScreen} options={{headerShown:false}}/>
-      <Stack.Screen name="DogAi" component={DogAi} options={{title: 'Ai 진단', headerStyle: {backgroundColor: '#ffd651ff'}, headerTintColor: '#000'}}/>
+      <Stack.Screen name="DogAi" component={DogAi} options={({route})=>({
+                      headerShown: true,
+                      headerStyle:HEADER_STYLE,
+                      headerTitle:(props)=>(
+                        <CustomTitle {...props} title="AI 진단"/>
+                      ),
+                    })}/>
     </Stack.Navigator>
   )
 }
@@ -79,14 +86,18 @@ function DiseaseButton(){
   return(
     <View style={styles.container}>
       <TouchableOpacity 
-        style={[styles.button, {height: 110,}]}
+        style={[styles.button, {marginTop: 25}]}
         onPress={()=>navigation.navigate('DogNoteScreen')}>
-        <Text style={[styles.buttonText, {paddingLeft:70}]}>증상 작성</Text>
+        <View style={[styles.container2]}>
+          <Text style={[styles.buttonText, {paddingLeft: 15}]}>증상 작성</Text>
+        </View>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.button,{height: 112,}]}
+        style={[styles.button]}
         onPress={()=>navigation.navigate('DogAi')}>
-        <Text style={[styles.buttonText, {paddingLeft:70}]}>AI 진단</Text>
+        <View style={styles.container2}>
+          <Text style={[styles.buttonText, {paddingLeft: 15}]}>AI 진단</Text>
+        </View>
       </TouchableOpacity>
     </View>
   )
@@ -99,22 +110,28 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     backgroundColor:'#ffffff',
+    paddingHorizontal: 10,
+  },
+  container2:{
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   block:{
     padding:16,
     backgroundColor: '#ffffffff'
   },
   button: {
-    backgroundColor: '#ffffffff',
-    borderColor:'#a8a8a8ff',
-    borderBottomWidth:2,
-    width: 500,
+    backgroundColor: '#ffe3c5ff',
+    width: '100%',
     justifyContent: 'center',
+    marginBottom: 5,
+    borderRadius: 25,
   },
   buttonText: {
     fontSize: 20,
-    color: '#000000ff'
-
+    fontWeight: 'bold',
+    color: '#572700ff',
+    marginVertical: 15,
   },
   headerTitle:{
     fontSize:20,

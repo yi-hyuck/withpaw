@@ -13,7 +13,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ScheduleResponseDTO {
     private Long id;
-    private Long memberId;
+    private Integer memberId;
     private String title;
     private Boolean recurring;
 

@@ -14,8 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ScheduleRequestDTO {
 
-    @NotNull(message = "회원 ID는 필수입니다.")
-    private Long memberId;
+//    @NotNull(message = "회원 ID는 필수입니다.")
+    private Integer memberId;
 
     @NotBlank(message = "일정 제목은 비워둘 수 없습니다.")
     private String title;

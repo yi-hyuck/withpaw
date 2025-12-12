@@ -10,10 +10,10 @@ import axios from "axios";
 
 import { RootStackParamList } from "./types";
 import { MarkedDates } from "react-native-calendars/src/types";
+import { useAuth } from "./useAuth";
+import { useMember } from "./MemberProvider";
 
 const API_URL = "http://10.0.2.2:8090/api/schedules";
-//임시 id
-const MEMBER_ID = 1;
 
 //드로어바 관련
 const Drawer = createDrawerNavigator();
@@ -102,10 +102,14 @@ LocaleConfig.defaultLocale = 'kr';
 
 //api
 //추가
-const createSchedule = async (schedule: any, token: string) => {
+const createSchedule = async (schedule: any, memberId: number | undefined, token: string) => {
+  if(!memberId){
+    throw new Error("멤버 id없음");
+  }
+  
   const requestBody = {
-    memberId: MEMBER_ID,
-    id: schedule.id,
+    memberId: memberId,
+    // id: schedule.id,
     title: schedule.name,
     time: schedule.time,
     recurring: schedule.repeats,
@@ -124,8 +128,8 @@ const createSchedule = async (schedule: any, token: string) => {
 }
 
 //조회
-const fetchSchedules = async (token: string): Promise<Schedule[]> => {
-  const scheduleResponse = await axios.get(`${API_URL}/member/${MEMBER_ID}`,{
+const fetchSchedules = async (memberId: number | undefined, token: string | null): Promise<Schedule[]> => {
+  const scheduleResponse = await axios.get(`${API_URL}/member/${memberId}`,{
     headers:{
       'Authorization' : `Bearer ${token}`
     }
@@ -162,13 +166,23 @@ const fetchSchedules = async (token: string): Promise<Schedule[]> => {
   return allInstances;
 }
 
-//삭제
-const deleteScheduleApi = async (scheduleId: number, token: string) => {
+//반복일정 전체 삭제
+const deleteScheduleApi = async (scheduleId: number, token: string | null) => {
   await axios.delete(`${API_URL}/${scheduleId}`, {
     headers:{
       'Authorization' : `Bearer ${token}`
     }
   })
+}
+
+//특정 일정만 삭제
+const deleteScheduleInstance = async(scheduleId: number, token: string | null) => {
+  const response = await axios.delete(`${API_URL}/instances/${scheduleId}`,{
+    headers:{
+      'Authorization' : `Bearer ${token}`
+    },
+  });
+  return response.data;
 }
 
 
@@ -189,23 +203,36 @@ const CustomTitle = ({ title }:CustomTitleProps) => {
 
 const HEADER_STYLE = {
     height: 55,
-    backgroundColor: '#ffd651ff',
+    backgroundColor: '#ffcf88ff',
 };
 
 function CalendarMainScreen() { //스텍 화면
+  const authToken = useAuth().authToken;
+  const {memberInfo, isLoading: isLoadingMember} = useMember();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [authToken, setAuthToken] = useState<string>('dummy-jwt-token-for-testing');
-  // const mockApi = getMockApi({schedules, setSchedules});
+  const memberId = memberInfo?.userId;
   
   const loadSchedules = useCallback(async () => {
-    try {
-        const data = await fetchSchedules(authToken); 
-        setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
-    } catch (e) {
-        console.error("Fetch Error:", e);
+    if (memberId !== undefined && authToken !== null) {
+      try {
+          const data = await fetchSchedules(memberId, authToken); 
+          const sortedData = data.sort((a, b) => {
+              const dateTimeA = new Date(`${a.startDate}T${a.time}:00`);
+              const dateTimeB = new Date(`${b.startDate}T${b.time}:00`);
+              return dateTimeA.getTime() - dateTimeB.getTime();
+          });
+          setSchedules(sortedData);
+          // setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
+      } catch (e) {
+          console.error("Fetch Error:", e);
+          setSchedules([]);
+      }
+    } else {
+      console.warn("회원 id 또는 인증 토큰 유효하지 않음");
+      setSchedules([]);
     }
-  }, [authToken]);
+  }, [memberId, authToken]);
 
   useFocusEffect(
     useCallback(() => {
@@ -213,28 +240,23 @@ function CalendarMainScreen() { //스텍 화면
     }, [loadSchedules])
   );
 
-  //초기 데이터 불러오기
-  useEffect(() => {
-    const loadSchedules = async () => {
-        try {
-            const data = await fetchSchedules(authToken); 
-            setSchedules(data.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
-        } catch (e) {
-            console.error("Fetch Error:", e);
-        }
-    };
-    loadSchedules();
-  }, [authToken]);
-
   //일정 추가
   const handleScheduleAdd = async (newSchedules: Schedule[]) => {
     if(newSchedules.length === 0) return;
 
     setIsSaving(true);
     try {
-        await createSchedule(newSchedules[0], authToken);
-        const updatedList = await fetchSchedules(authToken); 
-        setSchedules(updatedList.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
+      if (!memberId || !authToken) throw new Error("멤버 id 찾을 수 없음");
+        
+      await createSchedule(newSchedules[0], memberId, authToken);
+      const updatedList = await fetchSchedules(memberId, authToken);
+      const sortedList = updatedList.sort((a, b) => {
+        const dateTimeA = new Date(`${a.startDate}T${a.time}:00`);
+        const dateTimeB = new Date(`${b.startDate}T${b.time}:00`);
+        return dateTimeA.getTime() - dateTimeB.getTime();
+      });
+      setSchedules(sortedList);
+      // setSchedules(updatedList.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()));
     } catch (e) {
         Alert.alert('오류', '일정 추가 중 오류가 발생했습니다.');
         throw e;
@@ -243,15 +265,44 @@ function CalendarMainScreen() { //스텍 화면
     }
   };
 
-  const handleDeleteSchedule = async (idToDelete: number) => {
-    try {
-        await deleteScheduleApi(idToDelete, authToken);
-        setSchedules(prev => prev.filter(s => s.originalId !== idToDelete));
-    } catch (e) {
-        Alert.alert('오류', '일정 삭제 중 오류가 발생했습니다.');
-        throw e;
+  const handleDeleteSchedule = useCallback(async (schedule: Schedule) => {
+    // setIsDeleting(true);
+    // setError(null);
+    try{
+      if(schedule.repeats){
+        Alert.alert("반복 일정 삭제","일정을 어떻게 삭제하시겠습니까?",[
+          {text: "해당 일정만 삭제",
+            onPress: async()=>{
+              await deleteScheduleInstance(schedule.id, authToken);
+              const updatedList = await fetchSchedules(memberId, authToken);
+              setSchedules(prev => prev.filter(s => s.originalId !== schedule.originalId));
+            }
+          },{
+            text: "해당 반복 일정 전체 삭제",
+            onPress: async()=>{
+              await deleteScheduleApi(schedule.originalId, authToken);
+              const updatedList = await fetchSchedules(memberId, authToken);
+              setSchedules(prev => prev.filter(s => s.originalId !== schedule.originalId));
+            }
+          }
+        ], {cancelable: true})
+      } else{
+        Alert.alert("일정 삭제", "해당 일정을 삭제하시겠습니까?", [
+          {text:"취소",
+          },
+          {text:"삭제",
+            onPress: async()=> {
+              await deleteScheduleApi(schedule.originalId, authToken);
+              setSchedules(prev => prev.filter(s => s.originalId !== schedule.originalId));
+            }
+          }
+        ])
+      }
+    }catch(e){
+      Alert.alert("오류", "일정 삭제에 실패했습니다.");
+      throw e
     }
-  };
+  },[authToken, memberInfo?.userId, memberId, loadSchedules]);
 
   return(
     <Stack.Navigator>
@@ -300,7 +351,7 @@ function CalendarMainScreen() { //스텍 화면
 //일정 보기--------------------------------------
 interface ScheduleItemProps {
   schedule: Schedule;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (schedule: Schedule) => Promise<void>;
   isDeleting: boolean;
 }
 
@@ -311,7 +362,7 @@ function ScheduleItem({schedule, onDelete, isDeleting} : ScheduleItemProps){
     if(deleting || isDeleting) return;
     setDeleting(true);
     try{
-      await onDelete(schedule.originalId);
+      await onDelete(schedule);
     }catch (e){
       Alert.alert("오류", "일정 삭제에 실패했습니다.");
     } finally {
@@ -319,18 +370,34 @@ function ScheduleItem({schedule, onDelete, isDeleting} : ScheduleItemProps){
     }
   }
 
+  const formatTime = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    if(isNaN(hours) || isNaN(minutes)) return timeString;
+
+    return `${hours}:${minutes}`;
+  }
+
+  const formattedTime = formatTime(schedule.time);
+
   return(
     <View style={styles.itemContainer}>
-      <Text style={styles.itemTitle}>{schedule.name}</Text>
+      <View style={styles.timeBlock}>
+        <Text style={styles.timeText}>{formattedTime}</Text>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Text style={styles.itemTitle}>{schedule.name}</Text>
+      </View>
+
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={[styles.deleteButton, {paddingLeft: 15}]}
         onPress={handelDelete}
         disabled={deleting || isDeleting}
       >
         {deleting ? (
-          <MaterialCommunityIcons name="delete" size={20} color="#aaaaaaff"/>
+          <MaterialCommunityIcons name="delete" size={24} color="#ff9f46ff"/>
         ) : (
-          <MaterialCommunityIcons name="delete" size={20} color="#dfdfdfff"/>
+          <MaterialCommunityIcons name="delete" size={24} color="#ff9f46ff"/>
         )}
       </TouchableOpacity>
     </View>
@@ -587,7 +654,7 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
             <TextInput
               style={styles.addInput}
               placeholder="시간 선택"
-              value={selectTime} // <-- selectedTime 상태 표시
+              value={selectTime}
               editable={false}
               placeholderTextColor={'#000000ff'}
               underlineColorAndroid="transparent"
@@ -658,11 +725,31 @@ function ScheduleAdd({navigation, route, onGoBack, handleScheduleAddition, isSav
   )
 }
 
+const formatDisplayDate = (dateString: string): string => {
+  if (!dateString) return '';
+  try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day); 
+
+      const yyyy = date.getFullYear();
+      const MM = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      
+      const dayNames = LocaleConfig.locales.kr.dayNames;
+      const dayIndex = date.getDay();
+      const dayOfWeek = dayNames[dayIndex].replace('요일', '');
+
+      return `${yyyy}년 ${MM}월 ${dd}일 (${dayOfWeek})`;
+  } catch (e) {
+      console.error("날짜 포맷 오류:", e);
+      return dateString;
+  }
+}
 
 //캘린더 메인 화면
 interface CalendarScreenProps extends NativeStackScreenProps<RootStackParamList, 'CalendarScreen'>{
   schedules: Schedule[];
-  deleteSchedule: (id: number) => Promise<void>;
+  deleteSchedule: (schedule: Schedule) => Promise<void>;
 }
 
 function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenProps){
@@ -670,18 +757,19 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
 
   const today = formatDate(new Date());
   const [selectDate, setSelectDate] = useState<string>('');
-  //const [currentScreen, setCurrentScreen] = useState<'calendar' | 'add'>('calendar');
+  const displayDate = formatDisplayDate(selectDate || today);
 
   //API 관리
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const {authToken} = useAuth();
 
-  //일정 삭제
-  const handleDeleteSchedule = async (idToDelete: number) => {
+  // 일정 삭제
+  const handleDeleteSchedule = async (scheduleToDelete: Schedule) => {
     setIsDeleting(true);
     setError(null);
     try{
-      await deleteSchedule(idToDelete);
+      await deleteSchedule(scheduleToDelete); 
     }catch(e){
       setError('일정 삭제에 실패했습니다.');
       throw e;
@@ -734,7 +822,17 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
       const end = parseDate(schedule.endDate);
       const selected = parseDate(selectDate);
       return selected.getTime() >= start.getTime() && selected.getTime() <= end.getTime();
-    }).sort((a, b) => new Date(a.startDate) as any - (new Date(b.startDate) as any));
+    }).sort((a, b) => {
+        const timeA = a.time;
+        const timeB = b.time;
+        if (timeA < timeB) {
+            return -1;
+        }
+        if (timeA > timeB) {
+            return 1;
+        }
+        return 0;
+    });
   }
 
   const datePress = (day:DateData)=>{
@@ -742,7 +840,7 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
   }
 
   return(
-    <View>
+    <View style={styles.screenContainer}>
       <Calendar
         style={[styles.calendar]}
         monthFormat={'yyyy년 MM월'}
@@ -753,6 +851,11 @@ function CalendarScreen({navigation, schedules, deleteSchedule}:CalendarScreenPr
           todayTextColor:'#ff0040ff',
         }}
       />
+      <View style={styles.selectedDateHeader}>
+          <Text style={styles.selectedDateText}>
+              {displayDate}
+          </Text>
+      </View>
       <ScrollView style={styles.scheduleListContainer}>
         {schedulesForSelectDate().map((schedule) => (
           <ScheduleItem
@@ -812,21 +915,53 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 15,
     paddingTop: 10,
-    minHeight: 250,
-    backgroundColor:"#f5f5f5ff",
+    backgroundColor:"#ffffffff",
+  },
+  screenContainer:{
+    flex: 1,
+    backgroundColor:"#ffffffff",
   },
 
   //스케줄 아이템 스타일
   itemContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#fffaf4ff',
   },
   itemTitle:{
-    fontSize: 16,
+    paddingLeft: 15,
+    fontSize: 17,
     fontWeight: 'bold',
   },
   deleteButton:{
     padding: 10,
     borderRadius: 50,
+  },
+  timeText:{
+    fontSize: 17,
+  },
+  timeBlock:{
+    width: 70, 
+    paddingRight: 10,
+  },
+  titleBlock:{
+    flex: 1,
+    paddingHorizontal: 5,
+  },
+  selectedDateHeader:{
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+    borderBottomColor: '#e0e0e0',
+    alignContent: 'center',
+  },
+  selectedDateText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#000000',
   },
 
   //스케줄 추가
@@ -956,7 +1091,6 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     marginBottom: 20,
   },
-
   
 });
 

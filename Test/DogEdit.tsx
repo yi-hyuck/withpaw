@@ -437,7 +437,7 @@ function DogEdit(){
                 <Pressable 
                 style={[styles.button,
                 {marginTop:50},
-                {backgroundColor: isLoading ? '#aaaaaaff':'#ffbb00ff'}]}
+                {backgroundColor: isLoading ? '#aaaaaaff':'#ffc268ff'}]}
                 onPress={handleSubmit(onSubmit)}
                 disabled={isLoading}
                 >
@@ -524,11 +524,11 @@ const styles = StyleSheet.create({
   },
   selectButton:{
     borderColor:'#ffc400ff',
-    backgroundColor:'#ffc400ff',
+    backgroundColor:'#ffc64aff',
   },
   selectButton2:{
     borderColor:'#ffc400ff',
-    backgroundColor:'#ffc400ff',
+    backgroundColor:'#ffc64aff',
   },
   buttonText2:{
     fontSize:18,

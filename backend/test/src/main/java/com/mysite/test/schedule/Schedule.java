@@ -25,7 +25,7 @@ public class Schedule {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id; // 일정 ID
-	private Long memberId; // 회원 ID
+	private Integer memberId; // 회원 ID
 	// private Long petId; // 반려동물 ID
 	private String title; // 일정 제목
 	// private String content; // 일정 내용

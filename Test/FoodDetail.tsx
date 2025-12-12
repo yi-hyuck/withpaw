@@ -57,23 +57,27 @@ function FoodDetail({ route }: FoodDetailProps) {
 
     return (
         <ScrollView style={styles.container}>
+          <View style={styles.titleContainer}>
             <Text style={styles.title}>{foodData.name}</Text>
-
+          </View>
             <View style={styles.infoBox}>
-                <Text style={styles.infoTitle}>섭취 가능 여부</Text>
                 <Text style={foodData.edible ? styles.safeText : styles.warningText}>
                     {foodData.edible ? '안전 (섭취 가능)' : '주의 필요'}
                 </Text>
             </View>
             
             <View style={styles.infoBox}>
-                 <Text style={styles.infoTitle}>설명</Text>
-                 <Text style={styles.infoContent}>{foodData.description}</Text>
+              <View style={styles.titleWrapper}>
+                <Text style={styles.infoTitle}>설명</Text>
+              </View>
+                <Text style={styles.infoContent}>{foodData.description}</Text>
             </View>
 
             <View style={styles.infoBox}>
-                 <Text style={styles.infoTitle}>주의사항</Text>
-                 <Text style={styles.infoContent}>{foodData.cautions}</Text>
+              <View style={styles.titleWrapper}>
+                <Text style={styles.infoTitle}>주의사항</Text>
+              </View>
+                <Text style={styles.infoContent}>{foodData.cautions}</Text>
             </View>
         </ScrollView>
     );
@@ -83,41 +87,60 @@ function FoodDetail({ route }: FoodDetailProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#ffffff',
-    padding: 20,
+  },
+  titleContainer:{
+    alignItems: 'center',
+    borderBottomEndRadius: 20,
+    borderBottomLeftRadius: 20,
+    backgroundColor: '#ffcb7dff',
+    width: '100%',
+    marginBottom: 10,
   },
   title: {
+    marginTop: 30,
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 50,
   },
   infoBox: {
-    marginBottom: 25,
+    marginBottom: 20,
+    paddingHorizontal: 20,
   },
   infoTitle: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  infoTitle2:{
+    marginTop: 30,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#555',
     marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 5,
+    paddingBottom: 10,
   },
   infoContent: {
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
+    marginBottom: 20,
   },
   safeText: {
-    fontSize: 18,
+    marginTop: 50,
+    fontSize: 24,
     color: 'green',
     fontWeight: 'bold',
+    paddingBottom: 40,
+    textAlign: 'center'
   },
   warningText: {
-    fontSize: 18,
+    marginTop: 50,
+    fontSize: 24,
     color: 'red',
     fontWeight: 'bold',
+    paddingBottom: 40,
+    textAlign: 'center'
   },
   errorText: {
     fontSize: 16,
@@ -125,6 +148,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  titleWrapper: {
+    marginTop: 10,
+    paddingLeft: 15,
+    borderRadius: 15,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ffd99fff',
+    backgroundColor: '#ffd99fff',
+    justifyContent: 'center',
+    paddingVertical: 5,
+  }
 });
 
 export default FoodDetail;

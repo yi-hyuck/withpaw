@@ -1,44 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer'
 import axios, { AxiosRequestConfig } from 'axios';
+import { RootStackParamList } from "./types";
 
-export type RootStackParamList = {
-  DogNote: undefined;
-  DogNoteList: {
-    notes: Note[];
-    deleteNote: (id: number) => void;
-    navigateToEdit: (note: Note) => void;
-    isLoading: boolean;
-    fetchNotes: () => void;
-  };
-  AddNote: {
-    saveNote: (title: string, description: string, symptomDate: string, id?: number) => void;
-  };
-  EditNote: {
-    note: Note;
-    saveNote: (title: string, description: string, symptomDate: string, id?: number) => void;
-  };
-  NoteDetail: {
-    note: Note;
-    navigateToEdit: (note: Note) => void;
-    deleteNote: (id: number) => void;
-  };
-};
+import DogAi from './DogAi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const API_URL = "http://10.0.2.2:8090";
 
-interface Note {
-  id: number;
-  title: string;
-  description: string;
-  symptomDate: string;
-  createdAt: string;
+interface CustomTitleProps {
+    title: string;
+}
+
+const CustomTitle = ({ title }:CustomTitleProps) => {
+    return (
+        <Text style={[styles.headerTitle, { paddingLeft: 5 }]}>
+            {title}
+        </Text>
+    );
+};
+
+const HEADER_STYLE = {
+    height: 55,
+    backgroundColor: '#ffcf88ff',
+};
+
+
+//드로어바 관련
+const Drawer = createDrawerNavigator();
+
+type NavigationProps = DrawerNavigationProp<RootStackParamList>;
+
+const DrawerButton = () => {
+  const navigation = useNavigation<NavigationProps>();
+
+  return(
+    <TouchableOpacity
+      onPress={()=>navigation.openDrawer()}
+      style={{marginRight: 0}}
+    >
+      <MaterialCommunityIcons name='account-circle' size={30} color={"#ffffffff"}/>
+    </TouchableOpacity>
+  )
 }
 
 interface ApiResponse {
@@ -46,6 +55,14 @@ interface ApiResponse {
     message: string;
     status: number;
     data: any;
+}
+
+interface Note {
+  id: number;
+  title: string;
+  description: string;
+  symptomDate: string;
+  createdAt: string;
 }
 
 // JWT 토큰을 사용해 인증된 API 요청을 처리하는 헬퍼 함수(fetchWithAuth) 사용
@@ -137,7 +154,7 @@ function DogNoteScreen() {
 
 
   // 증상 기록 저장 또는 수정 함수 (API 연동)
-  const saveOrUpdateNote = async (title: string, description: string, symptomDate: string, id?: number) => {
+  const saveOrUpdateNote = async (title: string, description: string, symptomDate: string, id?: number): Promise<boolean> => {
     // 백엔드는 LocalDateTime을 기대하므로 YYYY-MM-DDT00:00:00 형태로 전송
     const noteData = { title, description, symptomDate: symptomDate + "T00:00:00" };
     try {
@@ -151,7 +168,7 @@ function DogNoteScreen() {
       } else { // 새로 추가 (POST 요청)
         const response = await fetchWithAuth('/symptoms', 'POST', noteData);
         if (response.success) {
-          Alert.alert("성공", "증상 기록이 추가되었습니다.");
+          
         } else {
           Alert.alert("실패", response.message || "추가에 실패했습니다.");
         }
@@ -222,14 +239,17 @@ function DogNoteScreen() {
         options={({ navigation }) => ({
           title: '증상 기록',
           headerRight: () => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('AddNote', { saveNote: saveOrUpdateNote })}
-            >
-              <MaterialCommunityIcons name="plus" size={30} color="#ff9100ff" />
-            </TouchableOpacity>
+            <View style={styles.headerRightContainer}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('AddNote', { saveNote: saveOrUpdateNote })}
+              >
+                <MaterialCommunityIcons name="plus" size={30} color="#a75e00ff" style={{marginHorizontal: 5}} />
+              </TouchableOpacity>
+              <DrawerButton/>
+            </View>
           ),
           headerStyle: {
-            backgroundColor: '#ffd651ff',
+            backgroundColor: '#ffcb7dff',
           },
           headerTitleStyle: {
             fontSize: 20,
@@ -253,29 +273,61 @@ function DogNoteScreen() {
 
       <Stack.Screen
         name="AddNote"
-        options={{ title: '새 기록 추가' }}
+        options={{ title: '새 기록 추가' ,
+          headerStyle: {
+            backgroundColor: '#ffcb7dff',
+            },
+            headerTitleStyle: {
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: '#000000ff',
+          }}}
       >
         {props => <AddNote {...props} />}
       </Stack.Screen>
 
       <Stack.Screen
         name="EditNote"
-        options={{ title: '기록 수정' }}
+        options={{ title: '기록 수정' ,
+          headerStyle: {
+            backgroundColor: '#ffcb7dff',
+            },
+            headerTitleStyle: {
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: '#000000ff',
+          }
+        }}
       >
         {props => <EditNote {...props} />}
       </Stack.Screen>
 
       <Stack.Screen
         name="NoteDetail"
-        options={{ title: '기록 상세' }}
+        options={{ title: '기록 상세' ,
+          headerStyle: {
+            backgroundColor: '#ffcb7dff',
+            },
+            headerTitleStyle: {
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: '#000000ff',
+          }
+        }}
       >
         {props => <NoteDetail {...props} deleteNote={deleteNote} />}
       </Stack.Screen>
+
+      <Stack.Screen name="DogAi" component={DogAi} options={({route})=>({
+                      headerShown: true,
+                      headerStyle:HEADER_STYLE,
+                      headerTitle:(props)=>(
+                        <CustomTitle {...props} title="AI 진단"/>
+                      ),
+                    })}/>
     </Stack.Navigator>
   );
 }
-
-export default DogNoteScreen;
 
 // 증상 기록 목록 화면 (DogNoteList)
 interface DogNoteListProps {
@@ -290,27 +342,29 @@ interface DogNoteListProps {
 function DogNoteList({ notes, deleteNote, navigateToEdit, isLoading, navigation }: DogNoteListProps) {
 
   const renderItem = ({ item }: { item: Note }) => (
-    <View style={styles.noteCardContainer}>
-      <TouchableOpacity // 카드
-        style={styles.noteCardContent}
-        onPress={() =>
-          navigation.navigate('NoteDetail', {
-            note: item,
-            navigateToEdit: navigateToEdit,
-            deleteNote: deleteNote
-          })}
-      >
-        <Text style={styles.cardTitle} numberOfLines={1}>{item.title} ({item.symptomDate})</Text>
-        <Text style={styles.cardData} numberOfLines={1}>
-          {item.description.length > 30 ? item.description.substring(0, 30) + '...' : item.description}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity // 카드 삭제
-        style={styles.delectButton}
-        onPress={() => deleteNote(item.id)}
-      >
-        <MaterialCommunityIcons name="delete" size={24} color={"#707070ff"} />
-      </TouchableOpacity>
+    <View>
+      <View style={styles.noteCardContainer}>
+        <TouchableOpacity // 카드
+          style={styles.noteCardContent}
+          onPress={() =>
+            navigation.navigate('NoteDetail', {
+              note: item,
+              navigateToEdit: navigateToEdit,
+              deleteNote: deleteNote
+            })}
+        >
+          <Text style={styles.cardTitle} numberOfLines={1}>{item.title} ({item.symptomDate})</Text>
+          <Text style={styles.cardData} numberOfLines={1}>
+            {item.description.length > 30 ? item.description.substring(0, 30) + '...' : item.description}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity // 카드 삭제
+          style={styles.delectButton}
+          onPress={() => deleteNote(item.id)}
+        >
+          <MaterialCommunityIcons name="delete" size={24} color={"#707070ff"} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -326,6 +380,7 @@ function DogNoteList({ notes, deleteNote, navigateToEdit, isLoading, navigation 
   return (
     <View style={styles.container2}>
       <FlatList
+        style={{marginTop: 15}}
         data={notes}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
@@ -336,6 +391,18 @@ function DogNoteList({ notes, deleteNote, navigateToEdit, isLoading, navigation 
           </View>
         )}
       />
+      <View style={styles.aiContainer}>
+        <TouchableOpacity
+          style={[styles.aiButton]}
+          onPress={()=>navigation.navigate('DogAi')}
+        >
+          <View style={{flexDirection:'row'}}>
+          {/* <MaterialCommunityIcons name="chat" size={30} color={'#ff9100ff'}/> */}
+            <Text style={{fontWeight: 'bold', textAlign:'center', color:'#351500ff'}}>AI 진단하러 가기 </Text>
+            <MaterialCommunityIcons name="arrow-right" size={20} color={'#351500ff'}/>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -343,10 +410,11 @@ function DogNoteList({ notes, deleteNote, navigateToEdit, isLoading, navigation 
 
 // 증상 기록 추가 화면 (AddNote)
 type AddNoteRouteProp = RouteProp<RootStackParamList, 'AddNote'>;
+type AddNoteScreenProps = NativeStackScreenProps<RootStackParamList, 'AddNote'>;
 
-function AddNote() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'AddNote'>>();
-  const route = useRoute<AddNoteRouteProp>();
+function AddNote({navigation, route} : AddNoteScreenProps) {
+  // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'AddNote'>>();
+  // const route = useRoute<AddNoteRouteProp>();
   const { saveNote } = route.params;
 
   const [noteTitle, setNoteTitle] = useState('');
@@ -376,7 +444,7 @@ function AddNote() {
           <MaterialCommunityIcons
             name="check-circle-outline"
             size={30}
-            color={(!noteTitle.trim() || !noteDescription.trim() || !symptomDate.trim()) ? '#acacacff' : '#ff9100ff'} />
+            color={(!noteTitle.trim() || !noteDescription.trim() || !symptomDate.trim()) ? '#acacacff' : '#00a500ff'} />
         </TouchableOpacity>
       ),
     });
@@ -414,11 +482,12 @@ function AddNote() {
 
 
 // 증상 기록 수정 화면 (EditNote)
+type EditNoteScreenProps = NativeStackScreenProps<RootStackParamList, 'EditNote'>;
 type EditNoteRouteProp = RouteProp<RootStackParamList, 'EditNote'>;
 
-function EditNote() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'EditNote'>>();
-  const route = useRoute<EditNoteRouteProp>();
+function EditNote({navigation, route}: EditNoteScreenProps) {
+  // const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'EditNote'>>();
+  // const route = useRoute<EditNoteRouteProp>();
   const { note, saveNote } = route.params;
 
   const [noteTitle, setNoteTitle] = useState(note.title || '');
@@ -448,7 +517,7 @@ function EditNote() {
           <MaterialCommunityIcons
             name="check-circle-outline"
             size={30}
-            color={(!noteTitle.trim() || !noteDescription.trim() || !symptomDate.trim()) ? '#acacacff' : '#ff9100ff'} />
+            color={(!noteTitle.trim() || !noteDescription.trim() || !symptomDate.trim()) ? '#acacacff' : '#00a500ff'} />
         </TouchableOpacity>
       ),
     });
@@ -506,13 +575,13 @@ function NoteDetail({ navigation, route, deleteNote }: NoteDetailProps) {
             onPress={() => navigateToEdit(note)}
             style={{ marginRight: 15 }}
           >
-            <MaterialCommunityIcons name='pencil' size={24} color="#ff9100ff" />
+            <MaterialCommunityIcons name='pencil' size={24} color="#a75e00ff" />
           </TouchableOpacity>
           {/* 삭제 버튼 */}
           <TouchableOpacity
             onPress={() => deleteNote(note.id)}
           >
-            <MaterialCommunityIcons name="delete" size={24} color="#ff9100ff" />
+            <MaterialCommunityIcons name="delete" size={24} color="#a75e00ff" />
           </TouchableOpacity>
         </View>
       )
@@ -553,7 +622,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 1,
     paddingTop: 3,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffffffff',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     color: '#707070ff',
@@ -569,10 +640,10 @@ const styles = StyleSheet.create({
   noteCardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffffff',
-    borderColor: '#acacacff',
+    backgroundColor: 'rgba(255, 247, 240, 1)',
+    borderColor: '#ffcb8fff',
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 15,
     marginBottom: 8,
     marginHorizontal: 10,
     paddingRight: 10,
@@ -596,15 +667,15 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 5,
-    marginBottom: 5,
+    marginTop: 12,
+    marginBottom: 10,
     paddingLeft: 10,
   },
   cardData: {
     fontSize: 14,
     color: '#555',
     paddingLeft: 10,
-    marginBottom: 5,
+    marginBottom: 15,
   },
 
   // 노트 추가/수정 스타일
@@ -682,4 +753,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffffff',
     textAlign: 'right',
   },
+
+  //AI
+  aiContainer:{
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiButton:{
+    position: 'absolute',
+    backgroundColor:"#ffe6a1ff",
+    borderColor: '#ff7b00ff',
+    borderRadius:50,
+    width: 250,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex:999,
+    bottom: 50
+  },
+  headerTitle:{
+    fontSize:20,
+    fontWeight:'bold',
+    color:'#000000'
+  },
+  headerRightContainer:{
+    flexDirection: 'row'
+  }
 });
+
+export default DogNoteScreen;

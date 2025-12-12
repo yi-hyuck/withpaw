@@ -109,8 +109,9 @@ function Login() {
 
   return(
     <View style={[styles.container]}>
+      <Text style={[styles.login]}>로그인</Text>
       <TextInput
-        style={[styles.input, {marginTop:60}]}
+        style={[styles.input, {marginTop:20}]}
         onChangeText={(text)=>handleChangeText('userid',text)}
         value={values.userid}
         placeholder="아이디"
@@ -140,6 +141,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff3dcff',
   },
   block:{
     padding:16,
@@ -148,18 +151,19 @@ const styles = StyleSheet.create({
   input:{
     width:350,
     height:45,
-    borderColor: '#a5a5a5ff',
-    borderWidth: 2,
-    paddingLeft:10,
+    borderColor: '#a15b00ff',
+    borderWidth: 1,
+    paddingLeft:20,
     marginBottom:20,
-    borderRadius: 7,
-    backgroundColor: '#ffffffff',
+    borderRadius: 15,
+    backgroundColor: '#fffaf0ff',
   },
   button: {
-    backgroundColor: '#ffd000ff',
+    backgroundColor: '#ffc164ff',
     paddingVertical: 10,
     paddingHorizontal: 151,
-    marginBottom: 20
+    marginBottom: 20,
+    borderRadius: 15,
   },
   buttonText: {
     fontSize: 20,
@@ -170,6 +174,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#ff0000ff',
     textAlign: 'left',
+  },
+  login:{
+    fontWeight: 'bold',
+    fontSize: 25,
+    color: '#7e4700ff',
   }
 });
 

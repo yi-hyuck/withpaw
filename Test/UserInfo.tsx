@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, Alert} from 'react-native';
+import { StatusBar, StyleSheet, useColorScheme, View, Text, Touchable, TouchableOpacity, Alert, Image} from 'react-native';
 import { RootStackParamList } from './types';
 import { createNativeStackNavigator, NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -31,7 +31,11 @@ const editMemberInfoApi = async (payload: any) => {
         });
         return response.data;
     } catch (error){
-        console.error("오류");
+        console.error("오류:", error instanceof Error ? error.message : String(error));
+        
+        if (axios.isAxiosError(error) && error.response) {
+            return { error: true, data: error.response.data }; 
+        }
         return null;
     }
 }
@@ -84,7 +88,7 @@ const CustomTitle = ({ title }:CustomTitleProps) => {
 
 const HEADER_STYLE = {
     height: 55,
-    backgroundColor: '#ffd651ff',
+    backgroundColor: '#ffcf88ff',
 };
 
 //정보 화면 (스텍)
@@ -118,12 +122,12 @@ function UserEdit({navigation, route}: userEditScreenProps){
     const defaultFormValues = {
         userid: currentData?.loginId,
         email: currentData?.email,
-        password: currentData?.password,
+        password: '',
         newPasswordChk: '',
         newPassword: '',
     };
 
-    const {control, handleSubmit, formState: {errors}, setValue, watch} = useForm({
+    const {control, handleSubmit, formState: {errors}, setError,  setValue, watch} = useForm({
         defaultValues: defaultFormValues
     });
 
@@ -144,7 +148,7 @@ function UserEdit({navigation, route}: userEditScreenProps){
             email: data.email,
             currentPassword: data.password,
             newPassword: data.newPassword.trim(),
-            newPasswordConfirm: data.new
+            newPasswordConfirm: data.newPasswordChk,
         }
 
         const result = await editMemberInfoApi(updateData);
@@ -152,11 +156,14 @@ function UserEdit({navigation, route}: userEditScreenProps){
         if(result && result.error){
             const errors = result.data;
             if (errors.email) {
-                Alert.alert("수정 실패", `이메일 오류: ${errors.email}`);
+                setError('email', { type: 'server', message: errors.email });
             } else if (errors.currentPassword) {
-                Alert.alert("수정 실패", `비밀번호 오류: ${errors.currentPassword}`);
+                setError('password', {
+                    type: 'server',
+                    message: errors.currentPassword
+                });
             } else if (errors.newPasswordConfirm) {
-                Alert.alert("수정 실패", `비밀번호 확인 오류: ${errors.newPasswordConfirm}`);
+                setError('newPasswordChk', { type: 'server', message: errors.newPasswordConfirm });
             } else {
                 Alert.alert("수정 실패", errors.message || "회원 정보 수정 중 오류가 발생했습니다.");
             }
@@ -170,7 +177,7 @@ function UserEdit({navigation, route}: userEditScreenProps){
     return(
         <KeyboardAwareScrollView style={{backgroundColor:'white'}}>
             <Text style={[styles.title, {marginTop:30}]}>아이디</Text>
-            <View style={styles.container}>
+            <View style={styles.addContainer}>
                 <Controller
                 control={control}
                 name="userid"
@@ -193,35 +200,36 @@ function UserEdit({navigation, route}: userEditScreenProps){
                 rules={{required: '아이디를 입력해주세요.'}}
                 />
             </View>
-            <Text style={[styles.title, {marginTop:20}]}>비밀번호</Text>
-            <View style={styles.container}>
+            <Text style={[styles.title, {marginTop:20}]}>현재 비밀번호</Text>
+            <View style={styles.addContainer}>
                 <Controller
                 control={control}
                 name="password"
                 render={({field: {onChange, value, onBlur}}) => (
                     <View>
                     <TextInput
-                        placeholder="비밀번호 입력"
+                        placeholder="현재 비밀번호 입력"
                         mode="outlined"
                         outlineStyle={styles.inputOutline}
-                        style={[styles.input2, {backgroundColor:'#e6e6e6ff'}]}
+                        style={[styles.input, {backgroundColor:'#ffffffff'}]}
                         onBlur={onBlur}
                         value={value}
                         onChangeText={(value)=>onChange(value)}
                         autoCapitalize="none"
-                        editable={false}
                         secureTextEntry={!seePw}
                         right={
                         <TextInput.Icon icon={seePw ? "eye-off" : "eye"}
                                         onPress={()=> setSeePw(!seePw)}
                                         forceTextInputFocus={false}/>}
                     />
+                    {errors?.password?.message && <Text style={styles.error}>{String(errors.password.message)}</Text>}
                     </View>
                 )}
+                rules={{required: '비밀번호를 입력해주세요.'}}
                 />
             </View>
             <Text style={[styles.title, {marginTop:20}]}>새 비밀번호</Text>
-            <View style={styles.container}>
+            <View style={styles.addContainer}>
                 <Controller
                 control={control}
                 name="newPassword"
@@ -260,7 +268,7 @@ function UserEdit({navigation, route}: userEditScreenProps){
                 />
             </View>
             <Text style={[styles.title, {marginTop:20}]}>새 비밀번호 확인</Text>
-            <View style={styles.container}>
+            <View style={styles.addContainer}>
                 <Controller
                 control={control}
                 name="newPasswordChk"
@@ -303,7 +311,7 @@ function UserEdit({navigation, route}: userEditScreenProps){
                 />
             </View>
             <Text style={[styles.title, {marginTop:20}]}>이메일</Text>
-            <View style={styles.container}>
+            <View style={styles.addContainer}>
                 <Controller
                 control={control}
                 name="email"
@@ -332,8 +340,8 @@ function UserEdit({navigation, route}: userEditScreenProps){
                 }}
                 />
             </View>
-            <View style={styles.container}>
-            <TouchableOpacity style={[styles.editButton, {backgroundColor: '#ffc400ff'}]} onPress={handleSubmit(onSubmit)}>
+            <View style={styles.addContainer}>
+            <TouchableOpacity style={[styles.editButton, {backgroundColor: '#ffc268ff'}]} onPress={handleSubmit(onSubmit)}>
                 <Text style={styles.editButtonText}>수정 완료</Text>
             </TouchableOpacity>
             </View>
@@ -395,32 +403,37 @@ function UserInfo({navigation}: userInfoScreenProps){
     }
 
     return(
-        <View style={styles.container}>
-            <MaterialCommunityIcons
-                style={{marginTop: 30}}
-                name='account-circle'
-                size={120}
-                color='#b9b9b9fb'
-            />
-            <Text style={styles.textStyle}>{userData?.loginId}</Text>
-            <Text style={styles.textStyle2}>{userData?.email}</Text>
-            <TouchableOpacity style={[styles.button, {marginTop: 40}]} 
-                onPress={()=>{
-                    if(userData) {
-                        navigation.navigate('UserEdit', {currentData: {loginId: userData.loginId, email: userData.email, password:userData?.password}, onSave: handleSave});
-                    } else{
-                        console.error("회원 정보 불러오는 중")
-                    }}}
-                    disabled={!userData}>
-                <Text style={styles.buttonText}>
-                    <Text>회원정보 수정</Text>
-                </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button]} onPress={UserDelete}>
-                <Text style={[styles.buttonText, {color:'red'}]}>
-                    <Text>회원 탈퇴</Text>
-                </Text>
-            </TouchableOpacity>
+        <View>
+            <View style={styles.container}>
+                <MaterialCommunityIcons
+                    style={{marginTop: 30}}
+                    name='account-circle'
+                    size={120}
+                    color='#b9b9b9fb'
+                />
+                <Text style={styles.textStyle}>{userData?.loginId}</Text>
+                <Text style={styles.textStyle2}>{userData?.email}</Text>
+                <TouchableOpacity style={[styles.button, {marginTop: 60}]} 
+                    onPress={()=>{
+                        if(userData) {
+                            navigation.navigate('UserEdit', {currentData: {loginId: userData.loginId, email: userData.email, password:userData?.password}, onSave: handleSave});
+                        } else{
+                            console.error("회원 정보 불러오는 중")
+                        }}}
+                        disabled={!userData}>
+                    <Text style={styles.buttonText}>
+                        <Text>회원정보 수정</Text>
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, {marginBottom: 20}]} onPress={UserDelete}>
+                    <Text style={[styles.buttonText, {color:'red'}]}>
+                        <Text>회원 탈퇴</Text>
+                    </Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.container2}>
+                <Image source={require('./assets/images/logo_Translucency.png')} style={styles.image}/>
+            </View>
         </View>
     )
 }
@@ -430,6 +443,16 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     backgroundColor:'#ffffffff',
+    borderBottomWidth: 2,
+    borderColor: '#ffddb6ff',
+  },
+  addContainer:{
+    alignItems: 'center',
+    backgroundColor:'#ffffffff',
+  },
+  container2:{
+    alignItems:'center',
+    backgroundColor:'#f2f2f2ff'
   },
   headerTitle:{
     fontSize:20,
@@ -458,6 +481,7 @@ const styles = StyleSheet.create({
   },
   buttonText:{
     fontSize: 16,
+    fontWeight: 'bold',
   },
   
   //수정
@@ -499,6 +523,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#ffffffff',
     fontWeight:'bold',
+  },
+  image:{
+    width: '120%',
+    height: 100,
+    bottom: -100
   }
 });
 

@@ -1,14 +1,6 @@
 package com.mysite.test.symptom;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mysite.test.disease.Disease;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,8 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SymptomResponseDTO {
-
-	private static final ObjectMapper mapper = new ObjectMapper(); 
 	
 	private Long id; // 증상 기록 ID
 	private Long memberId; // 회원 ID

@@ -75,7 +75,7 @@ const CustomTitle = ({ title }:CustomTitleProps) => {
 
 const HEADER_STYLE = {
     height: 55,
-    backgroundColor: '#ffd651ff',
+    backgroundColor: '#ffcf88ff',
 };
 
 //정보 화면 (스텍)

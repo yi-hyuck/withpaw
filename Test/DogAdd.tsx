@@ -410,7 +410,7 @@ function DogAdd(){
           <Pressable 
             style={[styles.button,
             {marginTop:50},
-            {backgroundColor:'#ffbb00ff'}]}
+            {backgroundColor:'#ffc268ff'}]}
             onPress={handleSubmit(onSubmit)}
           >
             <Text style={styles.buttonText}>회원가입</Text>
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   },
   selectButton:{
     borderColor:'#ffc400ff',
-    backgroundColor:'#ffc400ff',
+    backgroundColor:'#ffc64aff',
   },
   buttonText2:{
     fontSize:18,

@@ -18,8 +18,8 @@ const API_URL = "http://10.0.2.2:8090";
 function SignUp_Screen(){
   return(
     <Stack.Navigator>
-      <Stack.Screen name="SignUp" component={SignUp}/>
-      <Stack.Screen name="DogInfo" component={DogInfo}/>
+      <Stack.Screen name="SignUp" component={SignUp} options={{headerShown:false}}/>
+      <Stack.Screen name="DogInfo" component={DogInfo} options={{headerShown:false}}/>
     </Stack.Navigator>
   )
 }
@@ -81,8 +81,11 @@ function SignUp (){
   const [seePwChk, setSeePwChk] = useState(false);
 
   return(
-    <KeyboardAwareScrollView>
-      <Text style={[styles.title, {marginTop:50}]}>아이디</Text>
+    <KeyboardAwareScrollView style={[{backgroundColor:'#fff3dcff'}]}>
+      <View style={styles.container}>
+        <Text style={[styles.title2]}>회원가입</Text>
+      </View>
+      <Text style={[styles.title, {marginTop:60}]}>아이디</Text>
       <View style={styles.container}>
         <Controller
           control={control}
@@ -198,7 +201,7 @@ function SignUp (){
             }
           }}
         />
-        <View style={{marginTop:20}}>
+        <View style={{marginTop:30}}>
           <Button title="다음" onPress={handleSubmit(onSubmit)}></Button>
         </View>
       </View>
@@ -243,6 +246,15 @@ const styles = StyleSheet.create({
   error:{
     color: '#ff0000ff'
   },
+  title2:{
+    marginTop:50,
+    fontWeight: 'bold',
+    fontSize: 25,
+    alignContent: 'center',
+    justifyContent: 'center',
+    color: '#7e4700ff',
+    top: 30,
+  }
 });
 
 export default SignUp_Screen;

@@ -9,7 +9,6 @@ import { useMember } from "./MemberProvider";
 import { RootStackParamList } from "./types";
 
 import FoodsScreen from './Foods';
-import Disease from './Disease';
 import CalendarMainScreen from "./Calendar";
 import Maps from './Maps';
 import UserInfoScreen from './UserInfo';
@@ -18,6 +17,7 @@ import App from './App';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "./useAuth";
 import axios from "axios";
+import DogNoteScreen from "./DogNote";
 
 
 const Tab = createBottomTabNavigator();
@@ -48,12 +48,12 @@ function TabNaviBar() {
       initialRouteName="Foods"
       screenOptions={{
         tabBarStyle:{
-          backgroundColor: '#ffd651ff',
+          backgroundColor: '#ffcf88ff',
           height:55,
           borderTopWidth: 1,
           paddingBottom: 5,
         },
-        tabBarActiveTintColor: '#ff8800ff',
+        tabBarActiveTintColor: '#995200ff',
         tabBarInactiveTintColor: '#ffffff',
         tabBarLabelStyle: {
           fontSize: 14,
@@ -81,14 +81,14 @@ function TabNaviBar() {
             tabBarIcon:({color, size, focused}) => (
               <MaterialCommunityIcons 
                 name='magnify'
-                color={focused ? '#ff8800ff':'#ffffffff'}
+                color={focused ? '#995200ff':'#ffffffff'}
                 size={size}/>
             ),
           }}>
       </Tab.Screen>
       <Tab.Screen
-          name="Disease"
-          component={Disease}
+          name="DogNote"
+          component={DogNoteScreen}
           options={{
             title:"질병 관리",
             headerShown: false,
@@ -118,7 +118,7 @@ function TabNaviBar() {
           title:"지도",
           headerStyle:{
             height:55,
-            backgroundColor:'#ffd651ff',
+            backgroundColor:'#ffcf88ff',
           },
           headerTitleStyle:{
             fontSize:20,

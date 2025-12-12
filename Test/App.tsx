@@ -17,6 +17,7 @@ import { RootStackParamList } from './types';
 import { MemberProvider, useMember } from './MemberProvider';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './useAuth';
+import { Image } from 'react-native';
 //import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Login from './Login';
@@ -50,7 +51,7 @@ function NaviContainer(){
   return (
     <Stack.Navigator initialRouteName={isAuthenticated ? 'NaviBar' : 'Home'}>
       <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}}/>
-      <Stack.Screen name="Login" component={Login}/>
+      <Stack.Screen name="Login" component={Login} options={{headerShown: false}}/>
       <Stack.Screen name="SignUp" component={SignUp_Screen} options={{headerShown: false}}/>
       <Stack.Screen name="NaviBar" component={NaviBar} options={{headerShown: false}}/>
     </Stack.Navigator>
@@ -75,16 +76,17 @@ function App() {
 function HomeScreen({navigation}: Props) {
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.button, {backgroundColor: '#ffc830ff',}]}
-        onPress={()=>navigation.navigate('Login')}>
-        <Text style={styles.buttonText}>로그인</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, {backgroundColor: '#ffbb00ff',}]}
-        onPress={()=>navigation.navigate('SignUp')}>
-        <Text style={styles.buttonText}>회원가입</Text>
-      </TouchableOpacity>
+        <Image source={require('./assets/images/logo.png')} style={styles.image}/>
+        <TouchableOpacity
+          style={[styles.button, {backgroundColor: '#ffcf88ff',}, {top:0}]}
+          onPress={()=>navigation.navigate('Login')}>
+          <Text style={styles.buttonText}>로그인</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, {backgroundColor: '#ecc78fff',}]}
+          onPress={()=>navigation.navigate('SignUp')}>
+          <Text style={styles.buttonText}>회원가입</Text>
+        </TouchableOpacity>
     </View>
   );
 }
@@ -94,16 +96,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: "#ffffff"
+    backgroundColor: "#fff8eb"
   },
   button: {
     paddingVertical: 10,
     width: 350,
     alignItems:'center',
-    marginBottom: 30
+    marginBottom: 30,
+    borderRadius: 5,
   },
   buttonText: {
-    fontSize: 20,
+    fontSize: 21,
     color: '#ffffffff',
     fontWeight:'bold',
   },
@@ -118,6 +121,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#444',
   },
+  image:{
+    width: '120%',
+    height: 100,
+    top: -60,
+  }
   
 });
 

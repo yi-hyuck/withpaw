@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mysite.test.DataNotFoundException;
 import com.mysite.test.exception.BadRequestException;
 import com.mysite.test.exception.NotFoundException;
 
@@ -181,11 +182,26 @@ public class ScheduleInstanceService {
 		instanceRepository.save(instance);
 	}
 
+	//일정 삭제
 	@Transactional
 	public void deleteAllByScheduleId(Long scheduleId) {
 		if (scheduleId == null)
 			throw new IllegalArgumentException("scheduleId가 비어있습니다.");
 		instanceRepository.deleteAllByScheduleId(scheduleId);
+	}
+	
+	//특정 일정만 삭제
+	@Transactional
+	public void deleteInstance(Long id) {
+		if(id == null) {
+			throw new IllegalArgumentException("id가 비어있습니다.");
+		}
+		
+		if(!instanceRepository.existsById(id)) {
+			throw new DataNotFoundException("인스턴스를 찾을 수 없습니다.");
+		}
+		
+		instanceRepository.deleteById(id);
 	}
 
 	@Transactional

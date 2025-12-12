@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   aiMessage: {
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 0,
-    backgroundColor: '#ffe44cff'
+    backgroundColor: '#ffd374ff'
   },
   messageText: {
     fontSize: 16,

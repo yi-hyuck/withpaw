@@ -1,6 +1,5 @@
 package com.mysite.test.member;
 
-import java.security.Principal;
 import java.util.Optional;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -8,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mysite.test.exception.NotFoundException;
 import com.mysite.test.pet.PetForm;
 import com.mysite.test.pet.PetService;
 
@@ -56,6 +56,13 @@ public class MemberService {
     public Member getMember(String loginId) {
         return memberRepository.findByLoginId(loginId)
             .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginId));
+    }
+    
+    public Integer getLoginId(String loginId) {
+    	Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new NotFoundException("사용자 정보를 찾을 수 없습니다. (loginId: " + loginId + ")"));
+        
+        return member.getUserId();
     }
     
  // 이메일 수정

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
-    List<Schedule> findAllByMemberId(Long memberId);
+    List<Schedule> findAllByMemberId(Integer memberId);
 //@Repository
 //public class ScheduleRepository {
 //

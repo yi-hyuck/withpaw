@@ -47,7 +47,7 @@ public class ChatbotController {
         @AuthenticationPrincipal UserDetails userDetails // 현재 로그인된 사용자 정보
     ) {
     	if (userDetails == null) {
-    		return "{\"error\": \"로그인이 필요합니다.\"}";
+    		return "로그인이 필요합니다.";
     	}
     	
 //    	String userMessage = question;
@@ -87,17 +87,17 @@ public class ChatbotController {
         // SystemMessage (반려동물 전문가 설정 및 반려동물 정보 주입)
         var systemMessage = new SystemMessage(
             MessageFormat.format("""
-                너는 전문적인 반려동물 증상 상담 챗봇이야. 
+                너는 전문적인 반려동물 증상 상담 챗봇이야.
                 현재 상담을 요청한 사용자({0})가 등록한 반려동물 정보는 다음과 같아:
                 {1}
                 
                 사용자가 자신의 반려동물에 대한 증상을 묻는다면, 정보를 참고하여 친절하고 전문적으로 답변해 줘.
-                답변 시, 이모지(Emoji)를 사용하여 친근함을 더해.
+                답변 시, 친근한 말투로 답하되, 존댓말을 사용하고 답변과 관련 없는 말 (첫인사, 끝인사)은 하지마.
                 
                 하지만 **절대 진단이나 처방을 내리지 말고**, 반드시 다음과 같은 면책 문구를 답변 마지막에 추가해:
                 
-                ---
-                ⚠️ 이 답변은 참고용 정보이며, 정확한 진단과 치료는 반드시 동물병원 수의사에게 받아보셔야 합니다.
+                -------
+                이 답변은 참고용 정보이며, 정확한 진단과 치료는 반드시 동물병원 수의사에게 받아보셔야 합니다.
                 """, member.getLoginId(), petInfo) 
         );
 

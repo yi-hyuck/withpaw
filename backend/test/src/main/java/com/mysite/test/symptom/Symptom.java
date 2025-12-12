@@ -1,18 +1,12 @@
 package com.mysite.test.symptom;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-import com.mysite.test.pet.Pet;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -37,6 +31,7 @@ public class Symptom {
 	@Column(length = 2000, columnDefinition = "TEXT")
 	private String description; // 기록(텍스트)
 	private LocalDateTime createdAt; // 작성시점..
+	
 	
     @PrePersist
     void onCreate() {

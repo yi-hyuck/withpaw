@@ -34,7 +34,7 @@ const CustomTitle = ({ title }:CustomTitleProps) => {
 
 const HEADER_STYLE = {
     height: 55,
-    backgroundColor: '#ffd651ff',
+    backgroundColor: '#ffcb7dff',
 };
 
 //드로어바 
@@ -73,6 +73,7 @@ function FoodsScreen(){
       component={FoodDetail}
       options={{
         headerStyle:HEADER_STYLE,
+        headerShadowVisible: false,
         headerTitle: "음식 정보",
         headerTitleStyle: {fontSize:20, fontWeight:'bold', color:'#000000'}
       }}
@@ -139,13 +140,16 @@ function Foods() {
 
   return(
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="음식 검색"
-        value={searchText}
-        onChangeText={setSearchText}
-      />
-      
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="음식 검색"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        <MaterialCommunityIcons name='magnify' size={26} color={'#9e9e9eff'} style={[{paddingRight:12}]} />
+      </View>
+      <Text style={styles.listText}>목록</Text>
       {/*검색 결과 표시*/}
       <FlatList
         data={filteredFoodList}
@@ -163,22 +167,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor:'#ffffff',
   },
-  input:{
+  inputContainer:{
+    flexDirection: 'row',
+    alignItems: 'center',
     width:350,
     height:45,
-    borderColor: '#444444ff',
+    borderColor: '#e46600ff',
     backgroundColor: '#ffffffff',
-    borderWidth: 1,
-    paddingLeft:10,
-    marginBottom:10, // 목록과 검색창 간격
+    borderWidth: 2,
+    paddingLeft:15,
+    marginBottom:10,
     marginTop: 15,
-    borderRadius: 10,
+    borderRadius: 20,
+  },
+  input:{
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
   },
   list: {
     width: 350,
   },
   itemContainer: {
-    paddingVertical: 15,
+    paddingVertical: 20,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eeeeee',
@@ -191,6 +202,14 @@ const styles = StyleSheet.create({
     fontWeight:'bold',
     color:'#000000',
   },
+  listText:{
+    fontSize: 17,
+    fontWeight:'bold',
+    paddingTop: 10,
+    width:'100%',
+    paddingLeft: 30,
+    paddingBottom: 15,
+  }
 });
 
 export default FoodsScreen;

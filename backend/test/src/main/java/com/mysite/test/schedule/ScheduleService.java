@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,71 +107,6 @@ public class ScheduleService {
         }
     }
 
-    // 일정 수정
-    @Transactional
-    public ScheduleResponseDTO update(Long id, ScheduleUpdateDTO dto) {
-        Schedule existing = scheduleRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("해당 일정이 존재하지 않습니다."));
-
-        boolean isRecurring = Boolean.TRUE.equals(dto.getRecurring());
-
-        try {
-            if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
-                existing.setTitle(dto.getTitle());
-            }
-
-            if (dto.getRecurring() != null) {
-                existing.setRecurring(dto.getRecurring());
-            }
-
-            if (dto.getTime() != null || dto.getStartDate() != null) {
-            	LocalDate newDate = dto.getStartDate() != null ? dto.getStartDate() : existing.getStartDate();
-            	String newTimeStr = dto.getTime() != null ? dto.getTime():
-            		(existing.getScheduleTime() != null ? existing.getScheduleTime().toLocalTime().format(TIME_FORMATTER) : "00:00");
-            	LocalDateTime newDateTime = combineDateAndtime(newDate, newTimeStr);
-            	existing.setScheduleTime(newDateTime);
-            }
-            
-            if (isRecurring) {
-                // recurrenceRule이 null이면 새로 생성
-                if (existing.getRecurrenceRule() == null) {
-                    existing.setRecurrenceRule(new RecurrenceRule());
-                }
-
-                RecurrenceRule rule = existing.getRecurrenceRule();
-                rule.setType(RecurrenceType.WEEKLY);
-
-                if (dto.getInterval() != null) {
-                    if (dto.getInterval() <= 0)
-                        throw new BadRequestException("반복 간격은 1 이상이어야 합니다.");
-                    rule.setInterval(dto.getInterval());
-                }
-
-                if (dto.getStartDate() != null) {
-                    existing.setStartDate(dto.getStartDate());
-                }
-
-                if (dto.getEndDate() != null) {
-                    if (existing.getStartDate() != null && dto.getEndDate().isBefore(existing.getStartDate()))
-                        throw new BadRequestException("종료일은 시작일보다 빠를 수 없습니다.");
-                    existing.setEndDate(dto.getEndDate());
-                }
-
-            } else {
-                // 반복 아님 → 단일 일정으로 변경 시 recurrenceRule 초기화 가능
-                existing.setRecurrenceRule(null);
-            }
-
-            Schedule updated = scheduleRepository.save(existing);
-
-            return ScheduleResponseDTO.fromEntity(updated);
-
-        } catch (BadRequestException | NotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new InternalServerException("일정 수정 중 오류가 발생했습니다: " + e.getMessage());
-        }
-    }
 
 	// 단일 조회
 	public ScheduleResponseDTO getById(Long id) {
@@ -181,10 +115,10 @@ public class ScheduleService {
 	}
 
 	// 회원별 조회
-	public List<ScheduleResponseDTO> getByMemberId(Long memberId) {
+	public List<ScheduleResponseDTO> getByMemberId(Integer memberId) {
 		List<Schedule> list = scheduleRepository.findAllByMemberId(memberId);
-		if (list.isEmpty())
-			throw new NotFoundException("등록된 일정이 없습니다.");
+//		if (list.isEmpty())
+//			return list;
 		return list.stream().map(ScheduleResponseDTO::fromEntity).toList();
 	}
 
@@ -194,81 +128,51 @@ public class ScheduleService {
             throw new NotFoundException("삭제할 일정이 존재하지 않습니다.");
 
         try {
+            instanceGenerator.deleteInstancesByScheduleId(id);
             scheduleRepository.deleteById(id);
-            instanceGenerator.deleteInstancesByScheduleId(id); // 연관 인스턴스도 함께 삭제
         } catch (Exception e) {
             throw new InternalServerException("일정 삭제 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
 	// 반복 일정 실제 발생 시점 계산 
-	public List<LocalDateTime> generateOccurrences(Schedule schedule) {
-	    if (schedule == null) {
-	        throw new BadRequestException("일정 데이터가 없습니다.");
-	    }
-
-	    // 단일 일정인 경우
-	    if (Boolean.FALSE.equals(schedule.getRecurring()) || schedule.getRecurrenceRule() == null) {
-	        if (schedule.getScheduleTime() == null) {
-	            throw new BadRequestException("단일 일정의 시간 정보가 없습니다.");
-	        }
-	        return List.of(schedule.getScheduleTime());
-	    }
-
-	    // 반복 일정인 경우
-	    RecurrenceRule rule = schedule.getRecurrenceRule();
-	    if (rule.getType() == null) {
-	        throw new BadRequestException("반복 유형이 지정되지 않았습니다.");
-	    }
-	    if (schedule.getScheduleTime() == null) {
-	        throw new BadRequestException("반복 일정의 기준 시간이 없습니다.");
-	    }
-
-	    List<LocalDateTime> occurrences = new ArrayList<>();
-
-	    RecurrenceRule recurrenceRule = schedule.getRecurrenceRule();
-	    LocalDate start = schedule.getStartDate();
-	    LocalDate end = schedule.getEndDate();
-	    
-	    if (schedule.getScheduleTime() == null) {
-	        throw new BadRequestException("일정 시간 정보가 올바르지 않습니다.");
-	    }
-	    LocalTime time = schedule.getScheduleTime().toLocalTime(); 
-	    
-	    if (Boolean.FALSE.equals(schedule.getRecurring()) || recurrenceRule == null || start == null || end == null) {
-	    	if (Boolean.FALSE.equals(schedule.getRecurring())) {
-	    		occurrences.add(schedule.getScheduleTime());
-	    	}
-	    	return occurrences;
-	    }
-	    LocalDate current = start;
-	    int interval = rule.getInterval() != null && rule.getInterval() > 0 ? rule.getInterval() : 1;
-	    
-	    // WEEKLY 반복 (요청에 따라 시작일의 요일만 반복)
-	    List<DayOfWeek> days = rule.getDaysOfWeek() != null && !rule.getDaysOfWeek().isEmpty() 
-	    		? rule.getDaysOfWeek() 
-	    		: List.of(start.getDayOfWeek()); // 시작일의 요일만 사용
-
-	    LocalDate currentWeekStart = current;
-	    while (!currentWeekStart.isAfter(end)) {
-	        
-	        // 현재 주차 내에서 지정된 요일 계산 (DaysOfWeek는 하나만 존재)
-	        for (DayOfWeek day : days) {
-	            LocalDate targetDay = currentWeekStart.with(TemporalAdjusters.nextOrSame(day));
-	            
-	            // targetDay가 전체 일정 시작일(start) 이후이며, 종료일(end) 이내일 때만 추가
-	            if (!targetDay.isBefore(start) && !targetDay.isAfter(end)) {
-	                occurrences.add(LocalDateTime.of(targetDay, time));
-	            }
-	        }
-	        
-	        // 다음 반복 주기로 이동 (n주마다)
-	        currentWeekStart = currentWeekStart.plusWeeks(interval);
-	    }
-	    
-	    occurrences.sort(null);
-	    return occurrences;
-	}
+    public List<LocalDateTime> generateOccurrences(Schedule schedule){
+        List<LocalDateTime> occurrences = new ArrayList<>();
+        RecurrenceRule rule = schedule.getRecurrenceRule();
+        
+        // 단일 일정이나 규칙이 없으면 빈 목록 반환
+        if(rule == null || Boolean.FALSE.equals(schedule.getRecurring())) { //
+            if (schedule.getScheduleTime() != null && Boolean.FALSE.equals(schedule.getRecurring())) {
+                 return List.of(schedule.getScheduleTime());
+            }
+    		return occurrences;
+    	}
+    	
+    	if(schedule.getScheduleTime() == null) {
+    		throw new BadRequestException("반복 일정의 기준 시간 정보 없음");
+    	}
+    	
+    	LocalDate start = schedule.getStartDate();
+    	LocalDate end = schedule.getEndDate();
+    	LocalTime time = schedule.getScheduleTime().toLocalTime();
+    	
+    	int interval = rule.getInterval() != null && rule.getInterval() > 0 ? rule.getInterval() : 1;
+    	
+    	if(start == null || end == null) {
+    		throw new BadRequestException("반복 일정의 시작일과 종료일 없음");
+    	}
+    	
+        LocalDate current = start;
+    	
+        if (rule.getType() == RecurrenceType.WEEKLY) {
+            while(!current.isAfter(end)) { //
+                occurrences.add(LocalDateTime.of(current, time)); //
+                current = current.plusWeeks(interval); //
+            }
+        }
+    	
+    	return occurrences;
+    }
 	
 	// 반복 일정 발생일 계산
 	public List<LocalDateTime> getOccurrences(Long id) {
