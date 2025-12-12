@@ -1,0 +1,57 @@
+<html layout:decorate="~{layout}">
+<div layout:fragment="content" class="container my-3">
+    
+    <h2 class="border-bottom py-2">반려동물 정보 관리</h2>
+    
+    <div class="row my-3">
+        <div class="col-12 text-end">
+            <a th:href="@{/pet/create}" class="btn btn-success">반려동물 추가</a>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(petList)}" class="alert alert-info text-center mt-4">
+        등록된 반려동물 정보가 없습니다.
+    </div>
+
+    <div th:each="pet : ${petList}" class="card mb-4">
+        <div class="card-body">
+            
+            
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">이름</div>
+                <div class="col-md-9" th:text="${pet.petname}"></div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">품종</div>
+                <div class="col-md-9" th:text="${pet.breed.breedname}"></div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">나이</div>
+                <div class="col-md-9">[[${T(java.time.LocalDate).now().getYear() - pet.birthdate.getYear()}]]살</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">성별</div>
+                <div class="col-md-9" 
+                     th:text="${pet.gender == 'MALE' ? '남자' : (pet.gender == 'FEMALE' ? '여자' : pet.gender)}"></div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">중성화 여부</div>
+                <div class="col-md-9" th:text="${pet.neuter ? 'O' : 'X'}"></div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-3 text-muted">몸무게 (kg)</div>
+                <div class="col-md-9" th:text="${pet.weight}"></div>
+            </div>
+
+            <hr>
+            
+            <div class="d-flex justify-content-end gap-2">
+                <a th:href="@{|/pet/delete/${pet.petId}|}" class="btn btn-danger" 
+                   onclick="return confirm('정말로 삭제하시겠습니까?');">삭제</a>
+                <a th:href="@{|/pet/modify/${pet.petId}|}" class="btn btn-primary">수정</a>
+            </div>
+        </div>
+    </div>
+    
+</div>
+</html>
