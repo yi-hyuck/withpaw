@@ -99,16 +99,15 @@ function DogInfo(){
 
       try{
         const response = await axios.post(`${API_URL}/member/signup/pet`, finalData);
-        if(response.data && response.data.token){
-          // const token = response.data.token;
-          // await saveToken(token);
-          // await fetchMemberInfo(token);
-
-          // await new Promise<void>(resolve => setTimeout(resolve, 100));
+        if(response.data){
 
           setIsLoading(false);
 
-          navigation.reset({index:0, routes:[{name:'Home'}]});
+          setTimeout(() => {
+            navigation.reset({index:0, routes:[{name:'Home'}]});
+          }, 50);
+
+          return;
         }
       } catch (error: any){
         console.error('Signup Complete Error:', error.response?.data || error.message);
@@ -130,9 +129,10 @@ function DogInfo(){
         } else {
             Alert.alert("서버 연결 실패", "서버에 연결할 수 없습니다. 다시 시도해 주세요.");
         }
-        navigation.reset({index:0, routes:[{name:'Home'}]});
-      } finally{
+
         setIsLoading(false);
+
+        navigation.reset({index:0, routes:[{name:'Home'}]});
       }
     }
 
